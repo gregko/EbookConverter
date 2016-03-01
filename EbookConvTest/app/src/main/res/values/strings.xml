@@ -3,7 +3,7 @@
     <string name="version">Ebook Converter version</string>
     <string name="copyright">by Hyperionics Technology LLC</string>
     <string name="info">
-This small app is a demo of open source ebook conversion libraries, mainly for the benefit of other developers. Find the source code and open source licenses at www.github.com. The app may be also useful to end users, providing ebook conversions from MOBI/PCR/AZW and FB2 formats to EPUB.
+This small app is a demo of open source ebook conversion libraries, mainly for the benefit of other developers. Find the source code and open source licenses at github.com/gregko/EbookConverter. The app may be also useful to end users, providing ebook conversions from MOBI/PCR/AZW and FB2 formats to EPUB.
     </string>
     <string name="url">http://www.hyperionics.com</string>
     <string name="action_about">About</string>
