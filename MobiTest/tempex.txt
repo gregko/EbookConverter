@@ -1,0 +1,127 @@
+R=1 C=1: Returning XML node <blank version="1.0"> stream
+R=1 C=22: Returning doctype node <html PUBLIC="-//W3C//DTD XHTML 1.1//EN" SYSTEM="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"> stream
+R=1 C=119: Returning starttag node <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" style="font-size:1.136rem;"> stream
+Entering ParseHTML...
+R=1 C=204: Returning starttag node <head> stream
+Enter ParseHead...
+R=2 C=1: Returning starttag node <title> stream
+R=2 C=8: Returning text TextNode [Sala's G...]11 stream
+R=2 C=19: Returning endtag node <title> stream
+R=3 C=1: Returning starttag node <link type="application/vnd.adobe-page-template+xml" rel="stylesheet" href="page-template.xpgt"> stream
+R=4 C=1: Returning starttag node <link rel="stylesheet" type="text/css" href="flow00001.css"> stream
+R=5 C=1: Returning starttag node <meta content="text/html; charset=UTF-8"> stream
+R=6 C=1: Returning endtag node <head> stream
+Exit ParseHead 1...
+R=6 C=8: Returning starttag node <body class="text" id="text"> stream
+Enter ParseBody...
+R=7 C=1: Returning starttag node <div class="colophon" id="colophon_01"> stream
+Entering ParseBlock 1... 1
+R=8 C=1: Returning starttag node <img src="resource00000.jpg" alt="logo"> stream
+R=8 C=42: Returning text TextNode [ ]1 stream
+R=9 C=1: Returning endtag node <div> stream
+Exit ParseBlock 2 0...
+R=9 C=7: Returning endtag node <body> stream
+R=9 C=14: Returning endtag node <html> stream
+Returning NULL...
+Exit ParseBody 1...
+Exit ParseHTML 2...
+All nodes BEFORE clean and repair
+Root  
+ XmlDecl   version="1.0"
+ DocType   PUBLIC="-//W3C//DTD XHTML 1.1//EN" SYSTEM="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"
+ StartTag html   xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" style="font-size:1.136rem;"
+  StartTag head  
+   StartTag title  
+    Text   (11) 'Sala's Gift'
+   StartEnd link   type="application/vnd.adobe-page-template+xml" rel="stylesheet" href="page-template.xpgt"
+   StartEnd link   rel="stylesheet" type="text/css" href="flow00001.css"
+   StartEnd meta   content="text/html; charset=UTF-8"
+  StartTag body   class="text" id="text"
+   StartTag div   class="colophon" id="colophon_01"
+    StartEnd img   src="resource00000.jpg" alt="logo"
+All nodes AFTER clean and repair
+Root  
+ XmlDecl   version="1.0"
+ DocType   PUBLIC="-//W3C//DTD XHTML 1.1//EN" SYSTEM="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"
+ StartTag html   xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" style="font-size:1.136rem;"
+  StartTag head  
+   StartTag meta implicit  name="generator" content="HTML Tidy for HTML5 for Windows version 5.0.0"
+   StartTag title  
+    Text   (11) 'Sala's Gift'
+   StartEnd link   type="application/vnd.adobe-page-template+xml" rel="stylesheet" href="page-template.xpgt"
+   StartEnd link   rel="stylesheet" type="text/css" href="flow00001.css"
+   StartEnd meta   content="text/html; charset=UTF-8"
+  StartTag body   class="text" id="text"
+   StartTag div   class="colophon" id="colophon_01"
+    StartEnd img   src="resource00000.jpg" alt="logo"
+R=1 C=1: Returning XML node <blank version="1.0"> stream
+R=1 C=22: Returning doctype node <html PUBLIC="-//W3C//DTD XHTML 1.1//EN" SYSTEM="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"> stream
+R=1 C=119: Returning starttag node <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" style="font-size:1.136rem;"> stream
+Entering ParseHTML...
+R=1 C=204: Returning starttag node <head> stream
+Enter ParseHead...
+R=2 C=1: Returning starttag node <title> stream
+R=2 C=8: Returning text TextNode [Sala's G...]11 stream
+R=2 C=19: Returning endtag node <title> stream
+R=3 C=1: Returning starttag node <link type="application/vnd.adobe-page-template+xml" rel="stylesheet" href="page-template.xpgt"> stream
+R=4 C=1: Returning starttag node <link rel="stylesheet" type="text/css" href="flow00001.css"> stream
+R=5 C=1: Returning starttag node <meta content="text/html; charset=UTF-8"> stream
+R=6 C=1: Returning endtag node <head> stream
+Exit ParseHead 1...
+R=6 C=8: Returning starttag node <body class="text" id="text"> stream
+Enter ParseBody...
+R=7 C=1: Returning starttag node <div data-amznpagebreak="always"> stream
+Entering ParseBlock 1... 2
+R=7 C=34: Returning endtag node <div> stream
+Exit ParseBlock 2 0...
+R=7 C=40: Returning starttag node <div class="frontMatterPage" id="frontMatterPage_01"> stream
+Entering ParseBlock 1... 3
+R=8 C=1: Returning starttag node <h2 class="image"> stream
+Entering ParseInline 1...
+R=9 C=1: Returning starttag node <img src="resource00001.jpg" alt="ii"> stream
+R=9 C=40: Returning text TextNode [ ]1 stream
+R=10 C=1: Returning endtag node <h2> stream
+Exit ParseInline 2 0...
+R=11 C=1: Returning endtag node <div> stream
+Exit ParseBlock 2 0...
+R=11 C=7: Returning endtag node <body> stream
+R=11 C=14: Returning endtag node <html> stream
+Returning NULL...
+Exit ParseBody 1...
+Exit ParseHTML 2...
+All nodes BEFORE clean and repair
+Root  
+ XmlDecl   version="1.0"
+ DocType   PUBLIC="-//W3C//DTD XHTML 1.1//EN" SYSTEM="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"
+ StartTag html   xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" style="font-size:1.136rem;"
+  StartTag head  
+   StartTag title  
+    Text   (11) 'Sala's Gift'
+   StartEnd link   type="application/vnd.adobe-page-template+xml" rel="stylesheet" href="page-template.xpgt"
+   StartEnd link   rel="stylesheet" type="text/css" href="flow00001.css"
+   StartEnd meta   content="text/html; charset=UTF-8"
+  StartTag body   class="text" id="text"
+   StartTag div   data-amznpagebreak="always"
+   StartTag div   class="frontMatterPage" id="frontMatterPage_01"
+    StartTag h2   class="image"
+     StartEnd img   src="resource00001.jpg" alt="ii"
+All nodes AFTER clean and repair
+Root  
+ XmlDecl   version="1.0"
+ DocType   PUBLIC="-//W3C//DTD XHTML 1.1//EN" SYSTEM="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"
+ StartTag html   xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" style="font-size:1.136rem;"
+  StartTag head  
+   StartTag meta implicit  name="generator" content="HTML Tidy for HTML5 for Windows version 5.0.0"
+   StartTag title  
+    Text   (11) 'Sala's Gift'
+   StartEnd link   type="application/vnd.adobe-page-template+xml" rel="stylesheet" href="page-template.xpgt"
+   StartEnd link   rel="stylesheet" type="text/css" href="flow00001.css"
+   StartEnd meta   content="text/html; charset=UTF-8"
+  StartTag body   class="text" id="text"
+   StartTag div   data-amznpagebreak="always"
+   StartTag div   class="frontMatterPage" id="frontMatterPage_01"
+    StartTag h2   class="image"
+     StartEnd img   src="resource00001.jpg" alt="ii"
+R=1 C=1: Returning XML node <blank version="1.0" encoding="utf-8"> stream
+R=1 C=39: Returning starttag node <html xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="font-size:1.136rem;"> stream
+line 1 column 39 - 

@@ -1,0 +1,60 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MobiTest", "MobiTest.vcxproj", "{6BAB02F6-373A-4A5E-8392-6B056801BCED}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{4C9824E7-60CE-464C-8325-45FE282382BE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "..\libs\zlib\zlib.vcxproj", "{CA8DD399-DC7A-4130-9407-728475E718FF}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unzip101e", "..\libs\unzip101e\unzip101e.vcxproj", "{6E459B64-C936-4F84-AFA9-B78D353D9FBC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libxml2", "..\libs\libxml2\libxml2.vcxproj", "{F04AF527-9694-4E6D-85E6-FFB22A8422E7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libiconv", "..\libs\libiconv\libiconv.vcxproj", "{98E96C4F-4436-4204-9ABF-6734C32D6001}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmobi", "..\libs\libmobi\libmobi.vcxproj", "{5C97AA54-337B-4FCC-8F94-822DB1FD15C1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6BAB02F6-373A-4A5E-8392-6B056801BCED}.Debug|x86.ActiveCfg = Debug|Win32
+		{6BAB02F6-373A-4A5E-8392-6B056801BCED}.Debug|x86.Build.0 = Debug|Win32
+		{6BAB02F6-373A-4A5E-8392-6B056801BCED}.Release|x86.ActiveCfg = Release|Win32
+		{6BAB02F6-373A-4A5E-8392-6B056801BCED}.Release|x86.Build.0 = Release|Win32
+		{CA8DD399-DC7A-4130-9407-728475E718FF}.Debug|x86.ActiveCfg = Debug|Win32
+		{CA8DD399-DC7A-4130-9407-728475E718FF}.Debug|x86.Build.0 = Debug|Win32
+		{CA8DD399-DC7A-4130-9407-728475E718FF}.Release|x86.ActiveCfg = Release|Win32
+		{CA8DD399-DC7A-4130-9407-728475E718FF}.Release|x86.Build.0 = Release|Win32
+		{6E459B64-C936-4F84-AFA9-B78D353D9FBC}.Debug|x86.ActiveCfg = Debug|Win32
+		{6E459B64-C936-4F84-AFA9-B78D353D9FBC}.Debug|x86.Build.0 = Debug|Win32
+		{6E459B64-C936-4F84-AFA9-B78D353D9FBC}.Release|x86.ActiveCfg = Release|Win32
+		{6E459B64-C936-4F84-AFA9-B78D353D9FBC}.Release|x86.Build.0 = Release|Win32
+		{F04AF527-9694-4E6D-85E6-FFB22A8422E7}.Debug|x86.ActiveCfg = Debug|Win32
+		{F04AF527-9694-4E6D-85E6-FFB22A8422E7}.Debug|x86.Build.0 = Debug|Win32
+		{F04AF527-9694-4E6D-85E6-FFB22A8422E7}.Release|x86.ActiveCfg = Release|Win32
+		{F04AF527-9694-4E6D-85E6-FFB22A8422E7}.Release|x86.Build.0 = Release|Win32
+		{98E96C4F-4436-4204-9ABF-6734C32D6001}.Debug|x86.ActiveCfg = Debug|Win32
+		{98E96C4F-4436-4204-9ABF-6734C32D6001}.Debug|x86.Build.0 = Debug|Win32
+		{98E96C4F-4436-4204-9ABF-6734C32D6001}.Release|x86.ActiveCfg = Release|Win32
+		{98E96C4F-4436-4204-9ABF-6734C32D6001}.Release|x86.Build.0 = Release|Win32
+		{5C97AA54-337B-4FCC-8F94-822DB1FD15C1}.Debug|x86.ActiveCfg = Debug|Win32
+		{5C97AA54-337B-4FCC-8F94-822DB1FD15C1}.Debug|x86.Build.0 = Debug|Win32
+		{5C97AA54-337B-4FCC-8F94-822DB1FD15C1}.Release|x86.ActiveCfg = Release|Win32
+		{5C97AA54-337B-4FCC-8F94-822DB1FD15C1}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CA8DD399-DC7A-4130-9407-728475E718FF} = {4C9824E7-60CE-464C-8325-45FE282382BE}
+		{6E459B64-C936-4F84-AFA9-B78D353D9FBC} = {4C9824E7-60CE-464C-8325-45FE282382BE}
+		{F04AF527-9694-4E6D-85E6-FFB22A8422E7} = {4C9824E7-60CE-464C-8325-45FE282382BE}
+		{98E96C4F-4436-4204-9ABF-6734C32D6001} = {4C9824E7-60CE-464C-8325-45FE282382BE}
+		{5C97AA54-337B-4FCC-8F94-822DB1FD15C1} = {4C9824E7-60CE-464C-8325-45FE282382BE}
+	EndGlobalSection
+EndGlobal

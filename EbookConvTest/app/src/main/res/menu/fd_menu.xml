@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/create_dir"
+          android:title="@string/hts_create_dir"
+          android:showAsAction="ifRoom"
+          android:icon="@drawable/create_dir"
+            />
+    <item android:id="@+id/rename"
+          android:title="@string/hts_rename"
+          android:showAsAction="ifRoom"
+          android:icon="@drawable/rename_selector"
+            />
+    <item android:id="@+id/delete"
+          android:title="@string/hts_delete"
+          android:showAsAction="ifRoom"
+          android:icon="@drawable/delete_selector"
+            />
+</menu>

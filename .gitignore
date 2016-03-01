@@ -1,0 +1,48 @@
+# built application files
+*.apk
+*.ap_
+
+# files for the dex VM
+*.dex
+
+# Java class files
+*.class
+
+# generated files
+Release/
+Debug/
+CodeDB/
+VisualGDBCache/
+.vs/
+.idea/
+
+#other
+*.o
+*.o.d
+*.ini
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+gcc_Debug.h
+gcc_Release.h
+AndroidStripError.txt
+*.vgdbsettings
+*.sdf
+*.obj
+*.pdb
+*.dll
+*.mdb
+*.user
+*.bak
+*.old
+*.a
+*.so
+*.mobi
+*.azw3
+*.epub
+*.fb2
+*.fb2.zip
+
+/build/
+/.gradle/

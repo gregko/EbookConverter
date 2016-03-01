@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Ebook Converter</string>
+    <string name="version">Ebook Converter version</string>
+    <string name="copyright">by Hyperionics Technology LLC</string>
+    <string name="info">
+This small app is a demo of open source ebook conversion libraries, mainly for the benefit of other developers. Find the source code and open source licenses at www.github.com. The app may be also useful to end users, providing ebook conversions from MOBI/PCR/AZW and FB2 formats to EPUB.
+    </string>
+    <string name="url">http://www.hyperionics.com</string>
+    <string name="action_about">About</string>
+    <string name="hello">Press the folder button below to select MOBI/PRC/AZW/AZW3 or FB2 ebook file to covert to EPUB format.</string>
+    <string name="hts_select">Select</string>
+    <string name="hts_create_dir">Create folder</string>
+    <string name="hts_rename">Rename</string>
+    <string name="hts_no_write_perm">Cannot create/rename/delete anything here, no write permission.</string>
+    <string name="hts_not_writeable">Selected folder does not have write permission.</string>
+    <string name="hts_rename_name">New name:</string>
+    <string name="hts_create">Create</string>
+    <string name="hts_folder">Location</string>
+    <string name="hts_cant_read_folder">folder can\'t be read!</string>
+    <string name="hts_cancel">Cancel</string>
+    <string name="hts_delete">Delete</string>
+    <string name="hts_delete_prompt">Delete selected file?</string>
+    <string name="hts_delete_files_prompt">Delete selected files?</string>
+    <string name="hts_new_folder_name">New folder name:</string>
+    <string name="hts_new">New</string>
+    <string name="hts_file_name">File name:</string>
+    <string name="hts_save">Save</string>
+    <string name="storage_perm_prompt">This app needs to read and write storage in order to open local files for reading and allow you to save conversion results. Please allow access to external storage.</string>
+    <string name="next_arrow">Next ></string>
+    <string name="no_perm_exit">Sorry, this app cannot work without access to external storage. Please grant Storage access permission through System Settings - Apps, or uninstall this app.</string>
+    <string name="close_app">Close app</string>
+    <string name="perm_granted">Permission granted, thank you!</string>
+    <string name="sel_eb_file">Select ebook to convert</string>
+    <string name="conv_success">Conversion succesfull, saved file: </string>
+    <string name="conv_error">Conversion error, no file saved.</string>
+    <string name="unknown_file">Error: unknown file type selected.</string>
+</resources>
