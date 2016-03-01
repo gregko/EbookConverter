@@ -4,7 +4,7 @@ MOBI/AZW/PRC and FB2 ebook format converter to EPUB. Using open source libraries
 (https://github.com/bfabiszewski/libmobi) and fb2-to-epub-converter by Alexey Bobkov 
 (https://code.google.com/archive/p/fb2-to-epub-converter/)
 
-The shared library libEbookConv.so is used in my @Voice Aloud Reader app for Android (https://play.google.com/store/apps/details?id=com.hyperionics.avar) under GNU LGPL license,
+The shared library libEbookConv.so is used in my @Voice Aloud Reader app for Android (https://play.google.com/store/apps/details?id=com.hyperionics.avar) under LGPL license,
 therefore publishing this source code here also serves to fulfill the terms of LGPL.
 
 The EbookConv.sln and .vcxproj are Visual Studio 2015 solution and project which I use to develop and debug
