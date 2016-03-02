@@ -6,10 +6,6 @@
  * This file is part of libmobi.
  * Licensed under LGPL, either version 3, or any later.
  * See <http://www.gnu.org/licenses/>
- *
- * Modified slightly by Grzegorz Kochaniak (gregko@hyperionics.com)
- * in Feb. 2016 - corrected 'char *' vs. 'const char *'
- * inconsistencies between the source code and the declarations here.
  */
 
 #ifndef libmobi_buffer_h
@@ -30,6 +26,7 @@ typedef struct {
 
 MOBIBuffer * buffer_init(const size_t len);
 MOBIBuffer * buffer_init_null(const size_t len);
+void buffer_resize(MOBIBuffer *buf, const size_t newlen);
 void buffer_add8(MOBIBuffer *buf, const uint8_t data);
 void buffer_add16(MOBIBuffer *buf, const uint16_t data);
 void buffer_add32(MOBIBuffer *buf, const uint32_t data);
@@ -49,6 +46,7 @@ void buffer_appendstring(char *str, MOBIBuffer *buf, const size_t len);
 void buffer_getraw(void *data, MOBIBuffer *buf, const size_t len);
 unsigned char * buffer_getpointer(MOBIBuffer *buf, const size_t len);
 void buffer_copy8(MOBIBuffer *in, MOBIBuffer *source);
+void buffer_move(MOBIBuffer *buf, const int offset, const size_t len);
 void buffer_copy(MOBIBuffer *dest, MOBIBuffer *source, const size_t len);
 bool buffer_match_magic(MOBIBuffer *buf, const char *magic);
 void buffer_seek(MOBIBuffer *buf, const int diff);

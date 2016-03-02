@@ -2262,8 +2262,8 @@ d->m_huff_count[2][18] = (mz_uint16)(d->m_huff_count[2][18] + 1); packed_code_si
    
 // Ignore strict-aliasing warning on MinGW gcc
 // Added by libmobi author
-#ifndef _WIN32
-# pragma GCC diagnostic ignored "-Wstrict-aliasing" 
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wstrict-aliasing" 
 #endif
 #if MINIZ_USE_UNALIGNED_LOADS_AND_STORES
 #define TDEFL_READ_UNALIGNED_WORD(p) *(const mz_uint16*)(p)
@@ -3800,9 +3800,9 @@ if ((d->m_dict[probe_pos + match_len] == c0) && (d->m_dict[probe_pos + match_len
                     status = TINFL_STATUS_FAILED;
                 else if (!(flags & MZ_ZIP_FLAG_COMPRESSED_DATA))
                     file_crc32 = (mz_uint32)mz_crc32(file_crc32, (const mz_uint8 *)pRead_buf, (size_t)file_stat.m_comp_size);
-                cur_file_ofs += file_stat.m_comp_size;
+                //cur_file_ofs += file_stat.m_comp_size;
                 out_buf_ofs += file_stat.m_comp_size;
-                comp_remaining = 0;
+                //comp_remaining = 0;
             }
             else
             {
@@ -4677,7 +4677,7 @@ if ((d->m_dict[probe_pos + match_len] == c0) && (d->m_dict[probe_pos + match_len
                 return MZ_FALSE;
             }
             
-            cur_src_file_ofs += n;
+            //cur_src_file_ofs += n;
             cur_dst_file_ofs += n;
         }
         pZip->m_pFree(pZip->m_pAlloc_opaque, pBuf);

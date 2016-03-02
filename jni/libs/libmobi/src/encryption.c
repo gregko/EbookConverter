@@ -193,6 +193,11 @@ static size_t mobi_drm_parse(MOBIDrm **drm, const MOBIData *m) {
     buffer_setpos(buf, offset);
     for (size_t i = 0; i < count; i++) {
         drm[i] = calloc(1, sizeof(MOBIDrm));
+		if (drm[i] == NULL) {
+			debug_print("%s\n", "Memory allocation failed");
+			buffer_free_null(buf);
+			return 0;
+		}
         drm[i]->verification = buffer_get32(buf);
         drm[i]->size = buffer_get32(buf);
         drm[i]->type = buffer_get32(buf);
@@ -391,7 +396,7 @@ MOBI_RET mobi_decrypt(unsigned char *out, const unsigned char *in, const size_t 
  */
 static MOBI_RET mobi_drm_pidverify(const unsigned char *pid) {
     char map[] = "ABCDEFGHIJKLMNPQRSTUVWXYZ123456789";
-    size_t map_length = strlen(map);
+    uint8_t map_length = sizeof(map) - 1;
     uint32_t crc = (uint32_t) ~m_crc32(0xffffffff, pid, PIDSIZE - 2);
     crc ^= (crc >> 16);
     char checksum[2];

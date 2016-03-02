@@ -11,15 +11,6 @@
 #ifndef mobi_config_h
 #define mobi_config_h
 
-#ifdef _WIN32
-# include <direct.h>
-# include <malloc.h>
-# define _ALLOCA _malloca
-#else
-# include <alloca.h>
-# define _ALLOCA(size) alloca(size)
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif

@@ -92,7 +92,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>USE_ENCRYPTION;USE_LIBXML2;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\jni\libs\libmobi\src;..\jni\libs\zlib;..\jni\libs\libxml2\include;..\jni\libs\libiconv\include;..\jni\libs\libiconv\libcharset\include;..\jni\libs\unzip101e</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\jni\libs\libmobi\src;..\jni\libs\zlib;..\jni\libs\libxml2\include;..\jni\libs\libiconv\include;..\jni\libs\libiconv\libcharset\include;..\jni\libs\tidylib\include;..\jni\libs\tidylib\src;..\jni\libs\unzip101e</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -108,7 +108,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>USE_ENCRYPTION;USE_LIBXML2;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\libs\libmobi\src;..\libs\zlib;..\libs\libxml2\include;..\libs\libiconv\include;..\libs\libiconv\libcharset\include;..\libs\unzip101e</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\jni\libs\libmobi\src;..\jni\libs\zlib;..\jni\libs\libxml2\include;..\jni\libs\libiconv\include;..\jni\libs\libiconv\libcharset\include;..\jni\libs\tidylib\include;..\jni\libs\tidylib\src;..\jni\libs\unzip101e</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -126,7 +126,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>USE_ENCRYPTION;USE_LIBXML2;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\jni\libs\libmobi\src;..\jni\libs\zlib;..\jni\libs\libxml2\include;..\jni\libs\libiconv\include;..\jni\libs\libiconv\libcharset\include;..\jni\libs\unzip101e</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\jni\libs\libmobi\src;..\jni\libs\zlib;..\jni\libs\libxml2\include;..\jni\libs\libiconv\include;..\jni\libs\libiconv\libcharset\include;..\jni\libs\tidylib\include;..\jni\libs\tidylib\src;..\jni\libs\unzip101e</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -146,7 +146,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>USE_ENCRYPTION;USE_LIBXML2;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\libs\libmobi\src;..\libs\zlib;..\libs\libxml2\include;..\libs\libiconv\include;..\libs\libiconv\libcharset\include;..\libs\unzip101e</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\jni\libs\libmobi\src;..\jni\libs\zlib;..\jni\libs\libxml2\include;..\jni\libs\libiconv\include;..\jni\libs\libiconv\libcharset\include;..\jni\libs\tidylib\include;..\jni\libs\tidylib\src;..\jni\libs\unzip101e</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -161,6 +161,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\jni\libs\libmobi\tools\getopt.c" />
     <ClCompile Include="..\jni\libs\libmobi\tools\mobitool.c" />
   </ItemGroup>
   <ItemGroup>

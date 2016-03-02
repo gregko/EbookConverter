@@ -66,6 +66,30 @@ MOBIBuffer * buffer_init_null(const size_t len) {
 }
 
 /**
+ @brief Resize buffer
+ 
+ Smaller size than offset will cause data truncation.
+ 
+ @param[in,out] buf MOBIBuffer structure to be filled with data
+ @param[in] newlen New buffer size
+ */
+void buffer_resize(MOBIBuffer *buf, const size_t newlen) {
+    unsigned char *tmp = realloc(buf->data, newlen);
+    if (tmp == NULL) {
+        debug_print("%s", "Buffer allocation failed\n");
+        buf->error = MOBI_MALLOC_FAILED;
+        return;
+    }
+    buf->data = tmp;
+    buf->maxlen = newlen;
+    if (buf->offset >= newlen) {
+        buf->offset = newlen - 1;
+    }
+    debug_print("Buffer successfully resized to %zu\n", newlen);
+    buf->error = MOBI_SUCCESS;
+}
+
+/**
  @brief Adds 8-bit value to MOBIBuffer
  
  @param[in,out] buf MOBIBuffer structure to be filled with data
@@ -77,7 +101,7 @@ void buffer_add8(MOBIBuffer *buf, const uint8_t data) {
         buf->error = MOBI_BUFFER_END;
         return;
     }
-	buf->data[buf->offset++] = data;
+    buf->data[buf->offset++] = data;
 }
 
 /**
@@ -467,6 +491,39 @@ void buffer_copy(MOBIBuffer *dest, MOBIBuffer *source, const size_t len) {
     memcpy(dest->data + dest->offset, source->data + source->offset, len);
     dest->offset += len;
     source->offset += len;
+}
+
+/**
+ @brief Copy raw value within one MOBIBuffer
+ 
+ Memmove len bytes from offset (relative to current position)
+ to current position in buffer and advance buffer position.
+ Data may overlap.
+ 
+ @param[out] buf Buffer
+ @param[in] offset Offset to read from
+ @param[in] len Number of bytes to copy
+ */
+void buffer_move(MOBIBuffer *buf, const int offset, const size_t len) {
+    size_t aoffset = (size_t) abs(offset);
+    unsigned char *source = buf->data + buf->offset;
+    if (offset >= 0) {
+        if (buf->offset + aoffset + len > buf->maxlen) {
+            debug_print("%s", "End of buffer\n");
+            buf->error = MOBI_BUFFER_END;
+            return;
+        }
+        source += aoffset;
+    } else {
+        if (buf->offset < aoffset) {
+            debug_print("%s", "End of buffer\n");
+            buf->error = MOBI_BUFFER_END;
+            return;
+        }
+        source -= aoffset;
+    }
+    memmove(buf->data + buf->offset, source, len);
+    buf->offset += len;
 }
 
 /**

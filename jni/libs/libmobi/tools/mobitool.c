@@ -19,8 +19,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifndef _WIN32
-# include <unistd.h>
+#ifdef _WIN32
+#include <direct.h> // needed for _mkdir()
+#include "getopt.h"
+#else
+#include <unistd.h>
 #endif
 #include <ctype.h>
 #include <time.h>
@@ -65,6 +68,8 @@
 # else
 #  define COMPILER "gcc " __VERSION__
 # endif
+#elif defined(_MSC_VER)
+# define COMPILER "MSVC++ " STR(_MSC_VER)
 #else
 # define COMPILER "unknown"
 #endif
@@ -75,6 +80,8 @@
 #ifndef S_ISDIR
 # error "At least one of S_ISDIR or S_IFDIR macros is required"
 #endif
+
+#define FULLNAME_MAX 1024
 
 /* command line options */
 int dump_rawml_opt = 0;
@@ -161,9 +168,8 @@ bool dir_exists(const char *path) {
 void print_meta(const MOBIData *m) {
     /* Full name stored at offset given in MOBI header */
     if (m->mh && m->mh->full_name_offset && m->mh->full_name_length) {
-        size_t len = *m->mh->full_name_length;
-        char *full_name = _ALLOCA(len + 1);
-        if(mobi_get_fullname(m, full_name, len) == MOBI_SUCCESS) {
+        char full_name[FULLNAME_MAX + 1];
+        if(mobi_get_fullname(m, full_name, FULLNAME_MAX) == MOBI_SUCCESS) {
             printf("\nFull name: %s\n", full_name);
         }
     }
@@ -306,7 +312,11 @@ void print_exth(const MOBIData *m) {
         if (tag.tag == 0) {
             /* unknown tag */
             /* try to print the record both as string and numeric value */
-            char *str = _ALLOCA(curr->size + 1);
+            char *str = malloc(curr->size + 1);
+			if (!str) {
+				printf("Memory allocation failed\n");
+				exit(1);
+			}
             unsigned i = 0;
             unsigned char *p = curr->data;
             while (i < curr->size && isprint(*p)) {
@@ -316,11 +326,16 @@ void print_exth(const MOBIData *m) {
             str[i] = '\0';
             val32 = mobi_decode_exthvalue(curr->data, curr->size);
             printf("Unknown (%i): %s (%u)\n", curr->tag, str, val32);
+			free(str);
         } else {
             /* known tag */
             unsigned i = 0;
             size_t size = curr->size;
-            char *str = _ALLOCA(2 * size + 1);
+            char *str = malloc(2 * size + 1);
+			if (!str) {
+				printf("Memory allocation failed\n");
+				exit(1);
+			}
             unsigned char *data = curr->data;
             switch (tag.type) {
                 /* numeric */
@@ -350,7 +365,7 @@ void print_exth(const MOBIData *m) {
                 default:
                     break;
             }
-
+			free(str);
         }
         curr = curr->next;
     }
@@ -694,87 +709,6 @@ void usage(const char *progname) {
     printf("       -7      parse KF7 part of hybrid file (by default KF8 part is parsed)\n");
     exit(0);
 }
-
-#ifdef _WIN32
-
-static int     opterr = 1,             /* if error message should be printed */
-optind = 1,             /* index into parent argv vector */
-optopt,                 /* character checked for validity */
-optreset;               /* reset getopt */
-char  *optarg;          /* argument associated with option */
-
-#define BADCH   (int)'?'
-#define BADARG  (int)':'
-#define EMSG    ""
-
-/*
-* getopt --
-*      Parse argc/argv argument vector.
-*/
-int
-getopt(
-	int nargc,
-	char * const *nargv,
-	const char *ostr)
-{
-	const char *__progname = "mobitool";
-	static char *place = EMSG;              /* option letter processing */
-	char *oli;                              /* option letter list index */
-
-	if (optreset || !*place) {              /* update scanning pointer */
-		optreset = 0;
-		if (optind >= nargc || *(place = nargv[optind]) != '-') {
-			place = EMSG;
-			return (EOF);
-		}
-		if (place[1] && *++place == '-') {      /* found "--" */
-			++optind;
-			place = EMSG;
-			return (EOF);
-		}
-	}                                       /* option letter okay? */
-	if ((optopt = (int)*place++) == (int)':' ||
-		!(oli = strchr(ostr, optopt))) {
-		/*
-		* if the user didn't specify '-' as an option,
-		* assume it means EOF.
-		*/
-		if (optopt == (int)'-')
-			return (EOF);
-		if (!*place)
-			++optind;
-		if (opterr && *ostr != ':')
-			(void)fprintf(stderr,
-				"%s: illegal option -- %c\n", __progname, optopt);
-		return (BADCH);
-	}
-	if (*++oli != ':') {                    /* don't need argument */
-		optarg = NULL;
-		if (!*place)
-			++optind;
-	}
-	else {                                  /* need an argument */
-		if (*place)                     /* no white space */
-			optarg = place;
-		else if (nargc <= ++optind) {   /* no arg */
-			place = EMSG;
-			if (*ostr == ':')
-				return (BADARG);
-			if (opterr)
-				(void)fprintf(stderr,
-					"%s: option requires an argument -- %c\n",
-					__progname, optopt);
-			return (BADCH);
-		}
-		else                            /* white space */
-			optarg = nargv[optind];
-		place = EMSG;
-		++optind;
-	}
-	return (optopt);                        /* dump back option letter */
-}
-#endif
-
 /**
  @brief Main
  */

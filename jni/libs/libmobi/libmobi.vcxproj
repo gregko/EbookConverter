@@ -87,9 +87,9 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>USE_LIBXML2;USE_ENCRYPTION;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_XMLWRITER;USE_LIBXML2;USE_ENCRYPTION;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e;..\tidylib\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e;..\tidylib\include;..\tidylib\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -101,9 +101,9 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>USE_LIBXML2;USE_ENCRYPTION;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_XMLWRITER;USE_LIBXML2;USE_ENCRYPTION;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e;..\tidylib\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e;..\tidylib\include;..\tidylib\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -117,9 +117,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>USE_LIBXML2;USE_ENCRYPTION;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_XMLWRITER;USE_LIBXML2;USE_ENCRYPTION;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e;..\tidylib\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -135,9 +135,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>USE_LIBXML2;USE_ENCRYPTION;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_XMLWRITER;USE_LIBXML2;USE_ENCRYPTION;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e;..\tidylib\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

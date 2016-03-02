@@ -20,13 +20,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
-#include "config.h"
 
 /** @brief Visibility attributes for symbol export */
 #if defined (__CYGWIN__) || defined (__MINGW32__)
 #define MOBI_EXPORT __attribute__((visibility("default"))) __declspec(dllexport) extern
-#elif defined(_WIN32)
-#define MOBI_EXPORT
+#elif defined (_WIN32)
+#define MOBI_EXPORT __declspec(dllexport)
 #else
 #define MOBI_EXPORT __attribute__((__visibility__("default")))
 #endif
@@ -60,7 +59,7 @@ extern "C"
         MOBI_MALLOC_FAILED = 7, /**< Memory allocation error */
         MOBI_INIT_FAILED = 8, /**< Initialization error */
         MOBI_BUFFER_END = 9, /**< Out of buffer error */
-        MOBI_XML_ERR = 10, /**< LibXML2 error */
+        MOBI_XML_ERR = 10, /**< XMLwriter error */
         MOBI_DRM_PIDINV = 11,  /**< Invalid DRM PID */
         MOBI_DRM_KEYNOTFOUND = 12,  /**< Key not found */
         MOBI_DRM_UNSUPPORTED = 13, /**< DRM support not included */

@@ -6,8 +6,6 @@
  * This file is part of libmobi.
  * Licensed under LGPL, either version 3, or any later.
  * See <http://www.gnu.org/licenses/>
- *
- * Modified by G. Kochaniak Feb. 2016 (const added where needed)
  */
 
 #ifndef mobi_structure_h
@@ -46,5 +44,23 @@ typedef struct MOBITrie {
 MOBI_RET mobi_trie_insert_reversed(MOBITrie **root, char *string, char *value);
 MOBITrie * mobi_trie_get_next(char ***values, size_t *values_count, const MOBITrie *node, const char c);
 void mobi_trie_free(MOBITrie *node);
+
+/**
+ @brief Structure for links reconstruction.
+ 
+ Linked list of Fragment structures forms whole document part
+ */
+typedef struct MOBIFragment {
+    size_t raw_offset; /**< fragment offset in raw markup, SIZE_MAX if not present in original markup */
+    unsigned char *fragment; /**< Fragment data */
+    size_t size; /**< Fragment size */
+    bool is_malloc; /**< Is it needed to free this fragment or is it just an alias to part data */
+    struct MOBIFragment *next; /**< Link to next fragment */
+} MOBIFragment;
+
+MOBIFragment * mobi_list_add(MOBIFragment *curr, size_t raw_offset, unsigned char *fragment, const size_t size, const bool is_malloc);
+MOBIFragment * mobi_list_insert(MOBIFragment *curr, size_t raw_offset, unsigned char *fragment, const size_t size, const bool is_malloc, const size_t offset);
+MOBIFragment * mobi_list_del(MOBIFragment *curr);
+void mobi_list_del_all(MOBIFragment *first);
 
 #endif

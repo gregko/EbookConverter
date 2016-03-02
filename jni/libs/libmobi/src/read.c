@@ -475,7 +475,7 @@ size_t mobi_get_record_extrasize(const MOBIPdbRecord *record, const uint16_t fla
             const uint32_t size = buffer_get_varlen_dec(buf, &len);
             /* skip data */
             /* TODO: read and store in record struct */
-            buffer_seek(buf,  -(int)(size - len));
+            buffer_seek(buf, - (int)(size - len));
             extra_size += size;
         }
     };
@@ -515,7 +515,7 @@ size_t mobi_get_record_mb_extrasize(const MOBIPdbRecord *record, const uint16_t 
                 const uint32_t size = buffer_get_varlen_dec(buf, &len);
                 /* skip data */
                 /* TODO: read and store in record struct */
-                buffer_seek(buf,  -(int)(size - len));
+                buffer_seek(buf, - (int)(size - len));
             }
         };
         /* read multibyte section */
@@ -609,10 +609,14 @@ MOBI_RET mobi_parse_cdic(MOBIHuffCdic *huffcdic, const MOBIPdbRecord *record, co
     size_t index_count = buffer_get32(buf);
     const size_t code_length = buffer_get32(buf);
     if (huffcdic->code_length && huffcdic->code_length != code_length) {
-        debug_print("Warning: CDIC different code length %zu in record %i, previous was %zu\n", huffcdic->code_length, record->uid, code_length);
+        debug_print("CDIC different code length %zu in record %i, previous was %zu\n", huffcdic->code_length, record->uid, code_length);
+        buffer_free_null(buf);
+        return MOBI_DATA_CORRUPT;
     }
     if (huffcdic->index_count && huffcdic->index_count != index_count) {
-        debug_print("Warning: CDIC different index count %zu in record %i, previous was %zu\n", huffcdic->index_count, record->uid, index_count);
+        debug_print("CDIC different index count %zu in record %i, previous was %zu\n", huffcdic->index_count, record->uid, index_count);
+        buffer_free_null(buf);
+        return MOBI_DATA_CORRUPT;
     }
     if (code_length == 0 || code_length > HUFF_CODELEN_MAX) {
         debug_print("Code length exceeds sanity checks (%zu)\n", code_length);
@@ -647,7 +651,6 @@ MOBI_RET mobi_parse_cdic(MOBIHuffCdic *huffcdic, const MOBIPdbRecord *record, co
     }
     if (buf->offset + (index_count * 2) > buf->maxlen) {
         debug_print("%s", "CDIC indices data too short\n");
-        free(huffcdic->symbol_offsets);
         buffer_free_null(buf);
         return MOBI_DATA_CORRUPT;
     }
@@ -657,7 +660,6 @@ MOBI_RET mobi_parse_cdic(MOBIHuffCdic *huffcdic, const MOBIPdbRecord *record, co
     }
     if (buf->offset + code_length > buf->maxlen) {
         debug_print("%s", "CDIC dictionary data too short\n");
-        free(huffcdic->symbol_offsets);
         buffer_free_null(buf);
         return MOBI_DATA_CORRUPT;
     }
@@ -678,15 +680,19 @@ MOBI_RET mobi_parse_cdic(MOBIHuffCdic *huffcdic, const MOBIPdbRecord *record, co
 MOBI_RET mobi_parse_huffdic(const MOBIData *m, MOBIHuffCdic *huffcdic) {
     MOBI_RET ret;
     const size_t offset = mobi_get_kf8offset(m);
-    if (m->mh == NULL || m->mh->huff_rec_index == NULL) {
+    if (m->mh == NULL || m->mh->huff_rec_index == NULL || m->mh->huff_rec_count == NULL) {
         debug_print("%s", "HUFF/CDIC records metadata not found in MOBI header\n");
         return MOBI_DATA_CORRUPT;
     }
     const size_t huff_rec_index = *m->mh->huff_rec_index + offset;
     const size_t huff_rec_count = *m->mh->huff_rec_count;
+    if (huff_rec_count > HUFF_RECORD_MAXCNT) {
+        debug_print("Too many HUFF record (%zu)\n", huff_rec_count);
+        return MOBI_DATA_CORRUPT;
+    }
     const MOBIPdbRecord *curr = mobi_get_record_by_seqnumber(m, huff_rec_index);
-    if (curr == NULL) {
-        debug_print("%s", "HUFF record not found\n");
+    if (curr == NULL || huff_rec_count < 2) {
+        debug_print("%s", "HUFF/CDIC record not found\n");
         return MOBI_DATA_CORRUPT;
     }
     if (curr->size < HUFF_RECORD_MINSIZE) {
@@ -704,6 +710,10 @@ MOBI_RET mobi_parse_huffdic(const MOBIData *m, MOBIHuffCdic *huffcdic) {
     /* get following CDIC records */
     size_t i = 0;
     while (i < huff_rec_count - 1) {
+        if (curr == NULL) {
+            debug_print("%s\n", "CDIC record not found");
+            return MOBI_DATA_CORRUPT;
+        }
         ret = mobi_parse_cdic(huffcdic, curr, i++);
         if (ret != MOBI_SUCCESS) {
             debug_print("%s", "CDIC parsing failed\n");
@@ -731,6 +741,9 @@ MOBI_RET mobi_parse_fdst(const MOBIData *m, MOBIRawml *rawml) {
         return MOBI_DATA_CORRUPT;
     }
     const MOBIPdbRecord *fdst_record = mobi_get_record_by_seqnumber(m, fdst_record_number);
+    if (fdst_record == NULL) {
+        return MOBI_DATA_CORRUPT;
+    }
     MOBIBuffer *buf = buffer_init_null(fdst_record->size);
     if (buf == NULL) {
         debug_print("%s\n", "Memory allocation failed");
@@ -755,9 +768,29 @@ MOBI_RET mobi_parse_fdst(const MOBIData *m, MOBIRawml *rawml) {
         return MOBI_DATA_CORRUPT;
     }
     rawml->fdst = malloc(sizeof(MOBIFdst));
+    if (rawml->fdst == NULL) {
+        debug_print("%s\n", "Memory allocation failed");
+        buffer_free_null(buf);
+        return MOBI_MALLOC_FAILED;
+    }
     rawml->fdst->fdst_section_count = section_count;
     rawml->fdst->fdst_section_starts = malloc(sizeof(*rawml->fdst->fdst_section_starts) * section_count);
+    if (rawml->fdst->fdst_section_starts == NULL) {
+        debug_print("%s\n", "Memory allocation failed");
+        buffer_free_null(buf);
+        free(rawml->fdst);
+        rawml->fdst = NULL;
+        return MOBI_MALLOC_FAILED;
+    }
     rawml->fdst->fdst_section_ends = malloc(sizeof(*rawml->fdst->fdst_section_ends) * section_count);
+    if (rawml->fdst->fdst_section_ends == NULL) {
+        debug_print("%s\n", "Memory allocation failed");
+        buffer_free_null(buf);
+        free(rawml->fdst->fdst_section_starts);
+        free(rawml->fdst);
+        rawml->fdst = NULL;
+        return MOBI_MALLOC_FAILED;
+    }
     size_t i = 0;
     while (i < section_count) {
         rawml->fdst->fdst_section_starts[i] = buffer_get32(buf);
