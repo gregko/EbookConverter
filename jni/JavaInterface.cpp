@@ -27,8 +27,7 @@ JNIEXPORT int JNICALL Java_com_hyperionics_ebookconverter_ConvLib_mobiToEpubNati
 {
 	std::string fnameMobi = fromJstring(env, mobiFileName);
 	std::string fnameEpub = fromJstring(env, epubFileName);
-	bool ret = convertMobiToEpub(fnameMobi.c_str(), fnameEpub.c_str(), NULL, false);
-	return ret ? 0 : -1;
+	return convertMobiToEpub(fnameMobi.c_str(), fnameEpub.c_str(), NULL, false);
 }
 
 using namespace Fb2ToEpub;

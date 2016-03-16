@@ -256,6 +256,7 @@ mobi_free_rawml(rawml);
 @param[in] pid Device ID for decription, default NULL
 @param[in] parse_kf7_opt - true if KF7 part of hybrid KF7/KF8 file should be parsed, default false
 */
+// TODO: Compare with Bartek's latest souces... Error codes?
 MOBIRawml* loadMobiRawml(MOBIData *m, const char *mobiFn, const char* pid, bool parse_kf7_opt) {
 	MOBI_RET mobi_ret;
 	/* Initialize main MOBIData structure */
@@ -325,7 +326,8 @@ MOBIRawml* loadMobiRawml(MOBIData *m, const char *mobiFn, const char* pid, bool 
 	return rawml;
 }
 
-bool convertMobiToEpub(const char* mobiFn, const char* epubFn, const char* pid, bool parse_kf7_opt)
+// TODO: Compare with Bartek's latest souces... Return better error codes.
+int convertMobiToEpub(const char* mobiFn, const char* epubFn, const char* pid, bool parse_kf7_opt)
 {
 	MOBIData* m = mobi_init();
 	if (m == NULL) {
@@ -335,7 +337,7 @@ bool convertMobiToEpub(const char* mobiFn, const char* epubFn, const char* pid, 
 	MOBIRawml *rawml = loadMobiRawml(m, mobiFn, pid, parse_kf7_opt);
 	if (rawml == NULL) {
 		mobi_free(m);
-		return false;
+		return ERROR;
 	}
 	/* Save parts to files */
 	int ret = epub_rawml_parts(rawml, epubFn);
@@ -344,5 +346,5 @@ bool convertMobiToEpub(const char* mobiFn, const char* epubFn, const char* pid, 
 	}
 	mobi_free(m);
 	mobi_free_rawml(rawml);
-	return ret == SUCCESS;
+	return ret;
 }
