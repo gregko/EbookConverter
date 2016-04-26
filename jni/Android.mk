@@ -148,7 +148,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := tidylib
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/src
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/include
-LOCAL_ARM_MODE := arm
 # NDEBUG define needed to shut up printing debug info in debug builds.
 LOCAL_CFLAGS += -Wno-write-strings -gdwarf-2 -DNDEBUG -DCYGWIN_OS
 
@@ -190,7 +189,6 @@ LOCAL_MODULE := fb2toepub
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/fb2toepub
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/libs/fb2toepub/tiniconv
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/unzip101e/
-LOCAL_ARM_MODE := arm
 LOCAL_CFLAGS += -Wno-write-strings -gdwarf-2
 LOCAL_CPPFLAGS += -fexceptions
 
