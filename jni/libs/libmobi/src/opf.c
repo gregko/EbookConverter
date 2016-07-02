@@ -1300,7 +1300,8 @@ MOBI_RET mobi_xml_write_spine(xmlTextWriterPtr writer, const MOBIRawml *rawml) {
         curr = curr->next;
     }
     if (curr) {
-        sprintf(ncxid, "resource%05zu", curr->uid);
+        //sprintf(ncxid, "resource%05zu", curr->uid);
+		sprintf(ncxid, "toc");
     } else {
         return MOBI_DATA_CORRUPT;
     }
