@@ -1027,9 +1027,13 @@ void ConverterPass2::ParseTextAndEndElement (const String &element)
                 sup();
             else if(!t.s_.compare("code"))
                 code();
-            else if(!t.s_.compare("image"))
-                image(true, true, false);
-            else
+			else if (!t.s_.compare("image"))
+				image(true, true, false);
+			else if (!t.s_.compare("cite"))
+				cite();
+			else if (!t.s_.compare("p"))
+				p();
+			else
             {
                 std::ostringstream ss;
                 ss << "<" << t.s_ << "> unexpected in <" << element + ">";
@@ -1418,7 +1422,8 @@ void ConverterPass2::cite()
         text_author();
     //</text-author>
 
-    s_->EndElement();
+    //s_->EndElement();
+	s_->SkipRestOfElementContent();
     pout_->WriteStr("</div>\n");
 }
 
@@ -1555,7 +1560,9 @@ void ConverterPass2::document_info()
     //</src-ocr>
 
     //<id>
-    id();
+	LexScanner::Token t = s_->LookAhead();
+	if (!t.s_.compare("id"))
+		id();
     //<id>
 
     s_->SkipRestOfElementContent(); // skip rest of <document-info>
@@ -1898,6 +1905,12 @@ void ConverterPass2::section()
                 SwitchUnitIfSizeAbove(UNIT_SIZE1);
                 table();
             }
+			else if (!t.s_.compare("epigraph"))
+			{
+				SwitchUnitIfSizeAbove(UNIT_SIZE1);
+				epigraph();
+			}
+
             else
             {
                 std::ostringstream ss;
@@ -2143,45 +2156,78 @@ void ConverterPass2::title_info()
 {
     s_->BeginNotEmptyElement("title-info");
 
-    //<genre>
-    s_->CheckAndSkipElement("genre");
-    s_->SkipAll("genre");
-    //</genre>
+	for (LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+	{
+		if (!t.s_.compare("genre")) {
+			s_->CheckAndSkipElement("genre");
+			s_->SkipAll("genre");
+		}
+		else if (!t.s_.compare("author")) {
+			author();
+		}
+		else if (!t.s_.compare("book-title")) {
+			book_title();
+		}
+		else if (!t.s_.compare("annotation")) {
+			annotation(true);
+		}
+		else if (!t.s_.compare("keywords")) {
+			s_->SkipIfElement("keywords");
+		}
+		else if (!t.s_.compare("date")) {
+			title_info_date_ = date__epub();
+		}
+		else if (!t.s_.compare("coverpage")) {
+			coverpage();
+		}
+		else if (!t.s_.compare("lang")) {
+			lang();
+		}
+		else {
+			s_->SkipElement();
+		}
+	}
+	s_->SkipRestOfElementContent(); // skip rest of <title-info>
+	
+    ////<genre>
+    //s_->CheckAndSkipElement("genre");
+    //s_->SkipAll("genre");
+    ////</genre>
 
-    //<author>
-    do
-        author();
-    while(s_->IsNextElement("author"));
-    //<author>
+    ////<author>
+    //do
+    //    author();
+    //while(s_->IsNextElement("author"));
+    ////<author>
 
-    //<book-title>
-    book_title();
-    //</book-title>
+    ////<book-title>
+    //book_title();
+    ////</book-title>
 
-    //<annotation>
-    if(s_->IsNextElement("annotation"))
-        annotation(true);
-    //</annotation>
+    ////<annotation>
+    //if(s_->IsNextElement("annotation"))
+    //    annotation(true);
+    ////</annotation>
 
-    //<keywords>
-    s_->SkipIfElement("keywords");
-    //</keywords>
+    ////<keywords>
+    //s_->SkipIfElement("keywords");
+    ////</keywords>
 
-    //<date>
-    if(s_->IsNextElement("date"))
-        title_info_date_ = date__epub();
-    //<date>
+    ////<date>
+    //if(s_->IsNextElement("date"))
+    //    title_info_date_ = date__epub();
+    ////<date>
 
-    //<coverpage>
-    if(s_->IsNextElement("coverpage"))
-        coverpage();
-    //</coverpage>
+    ////<coverpage>
+    //if(s_->IsNextElement("coverpage"))
+    //    coverpage();
+    ////</coverpage>
 
-    //<lang>
-    lang();
-    //</lang>
+    ////<lang>
+    //lang();
+    ////</lang>
 
-    s_->SkipRestOfElementContent(); // skip rest of <title-info>
+    //s_->SkipRestOfElementContent(); // skip rest of <title-info>
 }
 
 //-----------------------------------------------------------------------

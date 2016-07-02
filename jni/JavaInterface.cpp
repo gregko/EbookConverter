@@ -65,32 +65,32 @@ JNIEXPORT int JNICALL Java_com_hyperionics_ebookconverter_ConvLib_fb2ToEpubNativ
 	}
 	catch (InternalException& ei)
 	{
-		LOGD("InternalException in Convert(): %s, file: %s, line: %d", ei.what(), ei.File(), ei.Line());
+		LOGE("InternalException in Convert(): %s, file: %s, line: %d", ei.what(), ei.File(), ei.Line());
 		ret = -3;
 	}
 	catch (ParserException& ep)
 	{
-		LOGD("ParserException in Convert(): %s, file: %s, 1st line %d, last line %d", ep.what(), ep.File(), ep.Location().fstLn_, ep.Location().lstLn_);
+		LOGE("ParserException in Convert(): %s, file: %s, 1st line %d, last line %d", ep.what(), ep.File(), ep.Location().fstLn_, ep.Location().lstLn_);
 		ret = -4;
 	}
 	catch (FontException& ef)
 	{
-		LOGD("FontException in Convert(): %s, file: %s", ef.what(), ef.File());
+		LOGE("FontException in Convert(): %s, file: %s", ef.what(), ef.File());
 		ret = -5;
 	}
 	catch (IOException& e)
 	{
-		LOGD("IOException in Convert(): %s, file: %s", e.what(), e.File());
+		LOGE("IOException in Convert(): %s, file: %s", e.what(), e.File());
 		ret = -1;
 	}
 	catch (ExternalException& ee)
 	{
-		LOGD("Exception in Convert(): %s", ee.what());
+		LOGE("Exception in Convert(): %s", ee.what());
 		ret = -2;
 	}
 	catch (...)
 	{
-		LOGD("Unknown exception in Convert.");
+		LOGE("Unknown exception in Convert.");
 		ret = -9;
 	}
 

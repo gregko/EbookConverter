@@ -330,58 +330,85 @@ void ConverterInfo::sequence()
 //-----------------------------------------------------------------------
 void ConverterInfo::title_info()
 {
-    s_->BeginNotEmptyElement("title-info");
+	s_->BeginNotEmptyElement("title-info");
 
-    //<genre>
-    s_->CheckAndSkipElement("genre");
-    s_->SkipAll("genre");
-    //</genre>
+	for (LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+	{
+		if (!t.s_.compare("genre")) {
+			s_->CheckAndSkipElement("genre");
+			s_->SkipAll("genre");
+		}
+		else if (!t.s_.compare("author")) {
+			author();
+		}
+		else if (!t.s_.compare("book-title")) {
+			book_title();
+		}
+		else if (!t.s_.compare("date")) {
+			title_info_date_ = date__textonly();
+		}
+		else if (!t.s_.compare("lang")) {
+			lang();
+		}
+		else if (!t.s_.compare("sequence")) {
+			sequence();
+		}
+		else {
+			s_->SkipElement();
+		}
+	}
+	s_->EndElement();
 
-    //<author>
-    do
-        author();
-    while(s_->IsNextElement("author"));
-    //<author>
+    ////<genre>
+    //s_->CheckAndSkipElement("genre");
+    //s_->SkipAll("genre");
+    ////</genre>
 
-    //<book-title>
-    book_title();
-    //</book-title>
+    ////<author>
+    //do
+    //    author();
+    //while(s_->IsNextElement("author"));
+    ////<author>
 
-    //<annotation>
-    s_->SkipIfElement("annotation");
-    //</annotation>
+    ////<book-title>
+    //book_title();
+    ////</book-title>
 
-    //<keywords>
-    s_->SkipIfElement("keywords");
-    //</keywords>
+    ////<annotation>
+    //s_->SkipIfElement("annotation");
+    ////</annotation>
 
-    //<date>
-    if(s_->IsNextElement("date"))
-        title_info_date_ = date__textonly();
-    //<date>
+    ////<keywords>
+    //s_->SkipIfElement("keywords");
+    ////</keywords>
 
-    //<coverpage>
-    s_->SkipIfElement("coverpage");
-    //</coverpage>
+    ////<date>
+    //if(s_->IsNextElement("date"))
+    //    title_info_date_ = date__textonly();
+    ////<date>
 
-    //<lang>
-    lang();
-    //</lang>
+    ////<coverpage>
+    //s_->SkipIfElement("coverpage");
+    ////</coverpage>
 
-    //<src-lang>
-    s_->SkipIfElement("src-lang");
-    //</src-lang>
+    ////<lang>
+    //lang();
+    ////</lang>
 
-    //<translator>
-    s_->SkipIfElement("translator");
-    //</translator>
+    ////<src-lang>
+    //s_->SkipIfElement("src-lang");
+    ////</src-lang>
 
-    //<sequence>
-    while(s_->IsNextElement("sequence"))
-        sequence();
-    //</sequence>
+    ////<translator>
+    //s_->SkipIfElement("translator");
+    ////</translator>
 
-    s_->EndElement();
+    ////<sequence>
+    //while(s_->IsNextElement("sequence"))
+    //    sequence();
+    ////</sequence>
+
+    //s_->EndElement();
 }
 
 void FB2TOEPUB_DECL DoPrintInfo (const String &in)

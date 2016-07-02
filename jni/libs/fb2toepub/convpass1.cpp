@@ -26,99 +26,97 @@
 
 namespace Fb2ToEpub
 {
+	//-----------------------------------------------------------------------
+	// CONVERTER PASS 1 IMPLEMENTATION
+	//-----------------------------------------------------------------------
+	class FB2TOEPUB_DECL ConverterPass1 : public Object, Noncopyable
+	{
+	public:
+		ConverterPass1(LexScanner *scanner, UnitArray *units) : s_(scanner), units_(units), sectionCnt_(0), textMode_(false), bodyType_(Unit::BODY_NONE) {}
 
+		void Scan();
 
-//-----------------------------------------------------------------------
-// CONVERTER PASS 1 IMPLEMENTATION
-//-----------------------------------------------------------------------
-class FB2TOEPUB_DECL ConverterPass1 : public Object, Noncopyable
-{
-public:
-    ConverterPass1(LexScanner *scanner, UnitArray *units) : s_(scanner), units_(units), sectionCnt_(0), textMode_(false), bodyType_(Unit::BODY_NONE) {}
+	private:
+		Ptr<LexScanner>         s_;
+		UnitArray               *units_;
+		int                     sectionCnt_;
+		bool                    textMode_;
+		Unit::BodyType          bodyType_;
+		std::set<String>        xlns_;      // xlink namespaces
+		std::set<String>        allRefIds_; // all ref ids
 
-    void Scan();
+		void SwitchUnitIfSizeAbove(std::size_t size, int parent);
+		const String* AddId(const AttrMap &attrmap);
+		String Findhref(const AttrMap &attrmap) const;
+		void ParseTextAndEndElement(const String &element, String *plainText);
 
-private:
-    Ptr<LexScanner>         s_;
-    UnitArray               *units_;
-    int                     sectionCnt_;
-    bool                    textMode_;
-    Unit::BodyType          bodyType_;
-    std::set<String>        xlns_;      // xlink namespaces
-    std::set<String>        allRefIds_; // all ref ids
-
-    void SwitchUnitIfSizeAbove  (std::size_t size, int parent);
-    const String* AddId         (const AttrMap &attrmap);
-    String Findhref             (const AttrMap &attrmap) const;
-    void ParseTextAndEndElement (const String &element, String *plainText);
-
-    // FictionBook elements
-    void FictionBook            ();
-    void a                      (String *plainText);
-    void annotation             (bool startUnit = false);
-    //void author                 ();
-    //void binary                 ();
-    void body                   (Unit::BodyType bodyType);
-    //void book_name              ();
-    //void book_title             ();
-    void cite                   ();
-    //void city                   ();
-    void code                   (String *plainText);
-    void coverpage              ();
-    //void custom_info            ();
-    //void date                   ();
-    void description            ();
-    //void document_info          ();
-    //void email                  ();
-    void emphasis               (String *plainText);
-    void empty_line             ();
-    void epigraph               ();
-    //void first_name             ();
-    //void genre                  ();
-    //void history                ();
-    //void home_page              ();
-    //void id                     ();
-    void image                  (bool in_line, Unit::Type unitType = Unit::UNIT_NONE);
-    //void isbn                   ();
-    //void keywords               ();
-    //void lang                   ();
-    //void last_name              ();
-    //void middle_name            ();
-    //void nickname               ();
-    //void output_document_class  ();
-    //void output                 ();
-    void p                      (String *plainText = NULL);
-    //void part                   ();
-    void poem                   ();
-    //void program_used           ();
-    //void publish_info           ();
-    //void publisher              ();
-    void section                (int parent);
-    //void sequence               ();
-    //void src_lang               ();
-    //void src_ocr                ();
-    //void src_title_info         ();
-    //void src_url                ();
-    void stanza                 ();
-    void strikethrough          (String *plainText);
-    void strong                 (String *plainText);
-    void style                  (String *plainText);
-    //void stylesheet             ();
-    void sub                    (String *plainText);
-    void subtitle               (String *plainText = NULL);
-    void sup                    (String *plainText);
-    void table                  ();
-    void td                     ();
-    void text_author            (String *plainText = NULL);
-    void th                     ();
-    void title                  (String *plainText = NULL, bool startUnit = false);
-    void title_info             ();
-    void tr                     ();
-    //void translator             ();
-    void v                      (String *plainText = NULL);
-    //void version                ();
-    //void year                   ();
-};
+		// Old Lex Scanner FictionBook elements
+		void FictionBook();
+		void a(String *plainText);
+		void annotation(bool startUnit = false);
+		//void author                 ();
+		//void binary                 ();
+		void body(Unit::BodyType bodyType);
+		//void book_name              ();
+		//void book_title             ();
+		void cite();
+		//void city                   ();
+		void code(String *plainText);
+		void coverpage();
+		//void custom_info            ();
+		//void date                   ();
+		void description();
+		//void document_info          ();
+		//void email                  ();
+		void emphasis(String *plainText);
+		void empty_line();
+		void epigraph();
+		//void first_name             ();
+		//void genre                  ();
+		//void history                ();
+		//void home_page              ();
+		//void id                     ();
+		void image(bool in_line, Unit::Type unitType = Unit::UNIT_NONE);
+		//void isbn                   ();
+		//void keywords               ();
+		//void lang                   ();
+		//void last_name              ();
+		//void middle_name            ();
+		//void nickname               ();
+		//void output_document_class  ();
+		//void output                 ();
+		void p(String *plainText = NULL);
+		//void part                   ();
+		void poem();
+		//void program_used           ();
+		//void publish_info           ();
+		//void publisher              ();
+		void section(int parent);
+		//void sequence               ();
+		//void src_lang               ();
+		//void src_ocr                ();
+		//void src_title_info         ();
+		//void src_url                ();
+		void stanza();
+		void strikethrough(String *plainText);
+		void strong(String *plainText);
+		void style(String *plainText);
+		//void stylesheet             ();
+		void sub(String *plainText);
+		void subtitle(String *plainText = NULL);
+		void sup(String *plainText);
+		void table();
+		void td();
+		void text_author(String *plainText = NULL);
+		void th();
+		void title(String *plainText = NULL, bool startUnit = false);
+		void title_info();
+		void tr();
+		//void translator             ();
+		void v(String *plainText = NULL);
+		//void version                ();
+		//void year                   ();
+	};
 
 //-----------------------------------------------------------------------
 void ConverterPass1::Scan()
@@ -188,25 +186,31 @@ void ConverterPass1::ParseTextAndEndElement(const String &element, String *plain
 
         case LexScanner::START:
             //<strong>, <emphasis>, <stile>, <a>, <strikethrough>, <sub>, <sup>, <code>, <image>
-            if(!t.s_.compare("strong"))
-                strong(plainText);
-            else if(!t.s_.compare("emphasis"))
-                emphasis(plainText);
-            else if(!t.s_.compare("style"))
-                style(plainText);
-            else if(!t.s_.compare("a"))
-                a(plainText);
-            else if(!t.s_.compare("strikethrough"))
-                strikethrough(plainText);
-            else if(!t.s_.compare("sub"))
-                sub(plainText);
-            else if(!t.s_.compare("sup"))
-                sup(plainText);
-            else if(!t.s_.compare("code"))
-                code(plainText);
-            else if(!t.s_.compare("image"))
-                image(true);
-            else
+			if (!t.s_.compare("strong"))
+				strong(plainText);
+			else if (!t.s_.compare("emphasis"))
+				emphasis(plainText);
+			else if (!t.s_.compare("style"))
+				style(plainText);
+			else if (!t.s_.compare("a"))
+				a(plainText);
+			else if (!t.s_.compare("strikethrough"))
+				strikethrough(plainText);
+			else if (!t.s_.compare("sub"))
+				sub(plainText);
+			else if (!t.s_.compare("sup"))
+				sup(plainText);
+			else if (!t.s_.compare("code"))
+				code(plainText);
+			else if (!t.s_.compare("image"))
+				image(true);
+			else if (!t.s_.compare("cite")) {
+				cite();
+			}
+			else if (!t.s_.compare("p")) {
+				p();
+			}
+			else
             {
                 std::ostringstream ss;
                 ss << "<" << t.s_ << "> unexpected in <" << element + ">";
@@ -442,7 +446,8 @@ void ConverterPass1::cite()
         text_author();
     //</text-author>
 
-    s_->EndElement();
+    //s_->EndElement();
+	s_->SkipRestOfElementContent();
 }
 
 //-----------------------------------------------------------------------
@@ -654,7 +659,12 @@ void ConverterPass1::section(int parent)
                 SwitchUnitIfSizeAbove(UNIT_SIZE1, parent);
                 poem();
             }
-            else if(!t.s_.compare("subtitle"))
+			else if (!t.s_.compare("epigraph"))
+			{
+				SwitchUnitIfSizeAbove(UNIT_SIZE1, parent);
+				epigraph();
+			}
+			else if(!t.s_.compare("subtitle"))
             {
                 SwitchUnitIfSizeAbove(UNIT_SIZE0, parent);
                 subtitle();
@@ -857,39 +867,65 @@ void ConverterPass1::title_info()
 {
     s_->BeginNotEmptyElement("title-info");
 
-    //<genre>
-    s_->CheckAndSkipElement("genre");
-    s_->SkipAll("genre");
-    //</genre>
+	for (LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+	{
+		if (!t.s_.compare("genre")) {
+			s_->CheckAndSkipElement("genre");
+			s_->SkipAll("genre");
+		}
+		else if (!t.s_.compare("author")) {
+			s_->CheckAndSkipElement("author");
+			s_->SkipAll("author");
+		}
+		else if (!t.s_.compare("book-title")) {
+			s_->CheckAndSkipElement("book-title");
+		}
+		else if (!t.s_.compare("annotation")) {
+			annotation(true);
+		}
+		else if (!t.s_.compare("coverpage")) {
+			coverpage();
+		}
+		else {
+			s_->SkipElement();
+		}
+	}
+	s_->SkipRestOfElementContent(); // skip rest of <title-info>
 
-    //<author>
-    s_->CheckAndSkipElement("author");
-    s_->SkipAll("author");
-    //<author>
-    
-    //<book-title>
-    s_->CheckAndSkipElement("book-title");
-    //</book-title>
 
-    //<annotation>
-    if(s_->IsNextElement("annotation"))
-        annotation(true);
-    //</annotation>
+    ////<genre>
+    //s_->CheckAndSkipElement("genre");
+    //s_->SkipAll("genre");
+    ////</genre>
 
-    //<keywords>
-    s_->SkipIfElement("keywords");
-    //</keywords>
+    ////<author>
+    //s_->CheckAndSkipElement("author");
+    //s_->SkipAll("author");
+    ////<author>
+    //
+    ////<book-title>
+    //s_->CheckAndSkipElement("book-title");
+    ////</book-title>
 
-    //<date>
-    s_->SkipIfElement("date");
-    //<date>
+    ////<annotation>
+    //if(s_->IsNextElement("annotation"))
+    //    annotation(true);
+    ////</annotation>
 
-    //<coverpage>
-    if(s_->IsNextElement("coverpage"))
-        coverpage();
-    //</coverpage>
+    ////<keywords>
+    //s_->SkipIfElement("keywords");
+    ////</keywords>
 
-    s_->SkipRestOfElementContent(); // skip rest of <title-info>
+    ////<date>
+    //s_->SkipIfElement("date");
+    ////<date>
+
+    ////<coverpage>
+    //if(s_->IsNextElement("coverpage"))
+    //    coverpage();
+    ////</coverpage>
+
+    //s_->SkipRestOfElementContent(); // skip rest of <title-info>
 }
 
 //-----------------------------------------------------------------------

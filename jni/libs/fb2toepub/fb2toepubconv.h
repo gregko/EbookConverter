@@ -43,6 +43,9 @@ namespace Fb2ToEpub
     int FB2TOEPUB_DECL PrintInfo(const String &in);
     int FB2TOEPUB_DECL Convert (InStm *pin, const strvector &css, const strvector &fonts, const strvector &mfonts,
                                 XlitConv *xlitConv, OutPackStm *pout);
+	int FB2TOEPUB_DECL XmlConvert(InStm *pin, const strvector &css, const strvector &fonts, const strvector &mfonts,
+								XlitConv *xlitConv, OutPackStm *pout);
+
 
 };  //namespace Fb2ToEpub
 

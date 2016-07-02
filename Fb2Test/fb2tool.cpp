@@ -28,6 +28,10 @@ int fb2ToEpub(const char* fnameFb2, const char* cssDir, const char* fnameEpub)
 		if (cssDir != NULL)
 			css.push_back(std::string(cssDir));
 
+		// TODO:
+		// Test JimBoton.fb2! Still empty on Android, though worked with a strange error on PC.
+		// The "strange error" is </head> text visible at start of each chapter or section.
+		// This is caused by XML tag <title/>, which my sentence splitter does not process correctly...
 		ret = Convert(pin, css, fonts, mfonts, xlitConv, pout);
 	}
 	catch (InternalException& ei)

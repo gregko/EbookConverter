@@ -184,7 +184,6 @@ namespace Fb2ToEpub
                                             UnitArray *units,
                                             OutPackStm *pout);
 
-
 };  //namespace Fb2ToEpub
 
 #endif

@@ -110,7 +110,9 @@ namespace Fb2ToEpub
     inline void IOError(const String &file, const String &what)
         { throw IOException(file, what); }
     inline void ParserError(const String &file, const ParserException::Loc &loc, const String &what)
-        { throw ParserException(file, loc, what); }
+    { 
+			throw ParserException(file, loc, what); 
+	}
     inline void FontError(const String &file, const String &what)
         { throw FontException(file, what);}
 

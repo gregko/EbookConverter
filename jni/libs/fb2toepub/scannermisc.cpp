@@ -100,8 +100,8 @@ void LexScanner::SkipElement()
 //-----------------------------------------------------------------------
 void LexScanner::CheckAndSkipElement(const String &element)
 {
-    if(!IsNextElement(element))
-        Error("expected element not found");
+	if (!IsNextElement(element))
+		Error("expected element not found");
     SkipElement();
 }
 
@@ -184,11 +184,14 @@ void LexScanner::ParseAttributes(AttrMap *attrmap)
 //-----------------------------------------------------------------------
 bool LexScanner::BeginElement(const String &element, AttrMap *attrmap)
 {
-    if(GetToken() != Token(START, element))
+	Token t1 = GetToken();
+	Token t2 = Token(START, element);
+    if(t1 != Token(START, element))
     {
         std::ostringstream ss;
         ss << "element <" << element << "> expected";
         Error(ss.str());
+		return false;
     }
 
     if(attrmap)
@@ -245,7 +248,9 @@ String LexScanner::SimpleTextElement(const String &element, AttrMap *attrmap)
 //-----------------------------------------------------------------------
 void LexScanner::EndElement()
 {
-    if(GetToken().type_ != END || GetToken().type_ != CLOSE)
+	LexScanner::Token t1 = GetToken();
+	LexScanner::Token t2 = GetToken();
+    if(t1.type_ != END || t2.type_ != CLOSE)
         Error("etag expected");
 }
 
