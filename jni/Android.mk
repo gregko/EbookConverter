@@ -149,7 +149,7 @@ LOCAL_MODULE := tidylib
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/src
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/include
 # NDEBUG define needed to shut up printing debug info in debug builds.
-LOCAL_CFLAGS += -Wno-write-strings -gdwarf-2 -DNDEBUG -DCYGWIN_OS
+LOCAL_CFLAGS += -Wno-write-strings -DNDEBUG -DCYGWIN_OS
 
 LOCAL_SRC_FILES += libs/tidylib/src/access.c
 LOCAL_SRC_FILES += libs/tidylib/src/alloc.c
@@ -189,7 +189,7 @@ LOCAL_MODULE := fb2toepub
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/fb2toepub
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/libs/fb2toepub/tiniconv
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/unzip101e/
-LOCAL_CFLAGS += -Wno-write-strings -gdwarf-2
+LOCAL_CFLAGS += -Wno-write-strings
 LOCAL_CPPFLAGS += -fexceptions
 
 LOCAL_SRC_FILES += libs/fb2toepub/tiniconv/tiniconv.c
