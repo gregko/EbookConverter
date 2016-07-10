@@ -8,9 +8,8 @@ APP_STL := stlport_shared
 ifeq ($(NDK_DEBUG),1)
     APP_OPTIM := debug
 	APP_CFLAGS += -D_DEBUG
-    APP_ABI := x86 armeabi-v7a
+    APP_ABI := x86
 else 
     APP_OPTIM := release
     APP_ABI := mips armeabi armeabi-v7a x86
-	#APP_ABI := x86
 endif
