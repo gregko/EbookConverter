@@ -11,5 +11,5 @@ ifeq ($(NDK_DEBUG),1)
     APP_ABI := x86 armeabi-v7a
 else 
     APP_OPTIM := release
-    APP_ABI := mips armeabi armeabi-v7a x86
+    APP_ABI := mips armeabi armeabi-v7a arm64-v8a x86
 endif

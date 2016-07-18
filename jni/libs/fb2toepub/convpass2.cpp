@@ -300,7 +300,7 @@ private:
     //void program_used           ();
     void publish_info           ();
     //void publisher              ();
-    void section                ();
+    void section                (const char* tag = NULL);
     //void sequence               ();
     //void src_lang               ();
     //void src_ocr                ();
@@ -1341,35 +1341,54 @@ void ConverterPass2::body()
     // set body language
     SetLanguage l(&bodyXmlLang_, attrmap);
 
-    //<image>
-    if(s_->IsNextElement("image"))
-    {
-        StartUnit(Unit::IMAGE);
-        image(false, false, true);
-    }
-    //</image>
+	for (LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+	{
+		if (!t.s_.compare("image")) {
+			StartUnit(Unit::IMAGE);
+			image(false, false, true);
+		}
+		else if (!t.s_.compare("title"))
+			title(true);
+		else if (!t.s_.compare("epigraph"))
+			epigraph();
+		else if (!t.s_.compare("section"))
+			section();
+		else {
+			s_->SkipElement();
+		}
+	}
+	EndUnit();
+	s_->SkipRestOfElementContent(); // skip rest of <body>
 
-    //<title>
-    if(s_->IsNextElement("title"))
-        title(true);
-    //</title>
+    ////<image>
+    //if(s_->IsNextElement("image"))
+    //{
+    //    StartUnit(Unit::IMAGE);
+    //    image(false, false, true);
+    //}
+    ////</image>
 
-    //<epigraph>
-    while(s_->IsNextElement("epigraph"))
-        epigraph();
-    //</epigraph>
+    ////<title>
+    //if(s_->IsNextElement("title"))
+    //    title(true);
+    ////</title>
 
-    do
-    {
-        //<section>
-        section();
-        //</section>
-    }
-    while(s_->IsNextElement("section"));
+    ////<epigraph>
+    //while(s_->IsNextElement("epigraph"))
+    //    epigraph();
+    ////</epigraph>
 
-    EndUnit();
+    //do
+    //{
+    //    //<section>
+    //    section();
+    //    //</section>
+    //}
+    //while(s_->IsNextElement("section"));
 
-    s_->SkipRestOfElementContent(); // skip rest of <body>
+    //EndUnit();
+
+    //s_->SkipRestOfElementContent(); // skip rest of <body>
 }
 
 //-----------------------------------------------------------------------
@@ -1815,10 +1834,12 @@ void ConverterPass2::publish_info()
 }
 
 //-----------------------------------------------------------------------
-void ConverterPass2::section()
+void ConverterPass2::section(const char* tag)
 {
     AttrMap attrmap;
-    bool notempty = s_->BeginElement("section", &attrmap);
+	if (tag == NULL)
+		tag = "section";
+    bool notempty = s_->BeginElement(tag, &attrmap);
 
     // set section language
     SetLanguage l(&sectXmlLang_, attrmap);

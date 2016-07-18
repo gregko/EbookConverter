@@ -91,7 +91,7 @@ namespace Fb2ToEpub
 		//void program_used           ();
 		//void publish_info           ();
 		//void publisher              ();
-		void section(int parent);
+		void section(int parent, const char* tag = NULL);
 		//void sequence               ();
 		//void src_lang               ();
 		//void src_ocr                ();
@@ -380,32 +380,48 @@ void ConverterPass1::body(Unit::BodyType bodyType)
 
     bodyType_ = bodyType;
 
-    //<image>
-    if(s_->IsNextElement("image"))
-        image(false, Unit::IMAGE);
-    //</image>
+	for (LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+	{
+		if (!t.s_.compare("image"))
+			image(false, Unit::IMAGE);
+		else if (!t.s_.compare("title"))
+			title(NULL, true);
+		else if (!t.s_.compare("epigraph"))
+			epigraph();
+		else if (!t.s_.compare("section"))
+			section(-1);
+		else {
+			s_->SkipElement();
+		}
+	}
+	s_->EndElement();
 
-    //<title>
-    if(s_->IsNextElement("title"))
-    {
-        title(NULL, true);
-    }
-    //</title>
+    ////<image>
+    //if(s_->IsNextElement("image"))
+    //    image(false, Unit::IMAGE);
+    ////</image>
 
-    //<title>
-    while(s_->IsNextElement("epigraph"))
-        epigraph();
-    //</title>
+    ////<title>
+    //if(s_->IsNextElement("title"))
+    //{
+    //    title(NULL, true);
+    //}
+    ////</title>
 
-    do
-    {
-        //<section>
-        section(-1);
-        //</section>
-    }
-    while(s_->IsNextElement("section"));
+    ////<title>
+    //while(s_->IsNextElement("epigraph"))
+    //    epigraph();
+    ////</title>
 
-    s_->EndElement();
+    //do
+    //{
+    //    //<section>
+    //    section(-1);
+    //    //</section>
+    //}
+    //while(s_->IsNextElement("section"));
+
+    //s_->EndElement();
 }
 
 //-----------------------------------------------------------------------
@@ -596,10 +612,12 @@ void ConverterPass1::poem()
 }
 
 //-----------------------------------------------------------------------
-void ConverterPass1::section(int parent)
+void ConverterPass1::section(int parent, const char* tag)
 {
     AttrMap attrmap;
-    bool notempty = s_->BeginElement("section", &attrmap);
+	if (tag == NULL)
+		tag = "section";
+    bool notempty = s_->BeginElement(tag, &attrmap);
 
     int idx = units_->size();
     units_->push_back(Unit(bodyType_, Unit::SECTION, sectionCnt_++, parent));
