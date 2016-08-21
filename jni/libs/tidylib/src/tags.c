@@ -780,6 +780,12 @@ void TY_(AdjustTags)( TidyDocImpl *doc )
     }
 }
 
+Bool TY_(IsHTML5Mode)( TidyDocImpl *doc )
+{
+    return doc->HTML5Mode;
+}
+
+
 /*\
  * Issue #285
  * Reset the table to default HTML5 mode.
@@ -809,6 +815,7 @@ void TY_(ResetTags)( TidyDocImpl *doc )
 #if ELEMENT_HASH_LOOKUP
     tagsEmptyHash( doc, tags ); /* not sure this is really required, but to be sure */
 #endif
+    doc->HTML5Mode = yes;   /* set HTML5 mode */
 }
 
 void TY_(FreeTags)( TidyDocImpl* doc )
@@ -823,6 +830,8 @@ void TY_(FreeTags)( TidyDocImpl* doc )
 
     /* get rid of dangling tag references */
     TidyClearMemory( tags, sizeof(TidyTagImpl) );
+
+    doc->HTML5Mode = no;    /* reset html5 mode == legacy html4 mode */
 }
 
 
@@ -924,7 +933,8 @@ void CheckTABLE( TidyDocImpl* doc, Node *node )
 {
     AttVal* attval;
     Bool HasSummary = (TY_(AttrGetById)(node, TidyAttr_SUMMARY) != NULL) ? yes : no;
-    Bool isHTML5 = (TY_(HTMLVersion)(doc) == HT50) ? yes : no;
+    uint vers = TY_(HTMLVersion)(doc);  /* Issue #377 - Also applies to XHTML5 */
+    Bool isHTML5 = ((vers == HT50)||(vers == XH50)) ? yes : no;
 
     TY_(CheckAttributes)(doc, node);
 

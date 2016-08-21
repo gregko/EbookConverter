@@ -52,7 +52,7 @@
 static void check_me(char *name);
 static Bool show_attrs = yes;
 #define MX_TXT 8
-static char buffer[MX_TXT+8]; /* NOTE extra for '...'\0 tail */
+static char buffer[(MX_TXT*4)+8]; /* NOTE extra for '...'\0 tail */
 static tmbstr get_text_string(Lexer* lexer, Node *node)
 {
     uint len = node->end - node->start;
@@ -61,31 +61,74 @@ static tmbstr get_text_string(Lexer* lexer, Node *node)
     unsigned char c;
     uint i = 0;
     Bool insp = no;
-    buffer[0] = (char)0;
-    while (cp < end ) {
-        c = *cp;
-        if (c == '\n') {
-            buffer[i++] = '\\';
-            buffer[i++] = 'n';
-            insp = yes;
-        } else if (c == ' ') {
-            if (!insp)
+    if (len <= ((MX_TXT * 2) + 3)) {
+        buffer[0] = 0;
+        while (cp < end) {
+            c = *cp;
+            cp++;
+            if (c == '\n') {
+                buffer[i++] = '\\';
+                buffer[i++] = 'n';
+            } else if ( c == ' ' ) {
+                if (!insp)
+                    buffer[i++] = c;
+                insp = yes;
+            } else {
                 buffer[i++] = c;
-            insp = yes;
-        } else {
-            buffer[i++] = c;
-            insp = no;
+                insp = no;
+            }
         }
-        cp++;
-        if (i >= MX_TXT)
-            break;
-    }
-    if (i < len) {
-        buffer[i++] = '.';
-        if (i < len) {
-            buffer[i++] = '.';
-            if (i < len) {
-                buffer[i++] = '.';
+    } else {
+        char *end1 = cp + MX_TXT;
+        char *bgn = cp + (len - MX_TXT);
+        buffer[0] = 0;
+        if (bgn < end1)
+            bgn = end1;
+        while (cp < end1) {
+            c = *cp;
+            cp++;
+            if (c == '\n') {
+                buffer[i++] = '\\';
+                buffer[i++] = 'n';
+            } else if ( c == ' ' ) {
+                if (!insp)
+                    buffer[i++] = c;
+                insp = yes;
+            } else {
+                buffer[i++] = c;
+                insp = no;
+            }
+            if (i >= MX_TXT)
+                break;
+        }
+        c = '.';
+        if ((i < len)&&(cp < bgn)) {
+            buffer[i++] = c;
+            cp++;
+            if ((i < len)&&(cp < bgn)) {
+                buffer[i++] = c;
+                cp++;
+                if ((i < len)&&(cp < bgn)) {
+                    buffer[i++] = c;
+                    cp++;
+                }
+            }
+        }
+        cp = bgn;
+        insp = no;
+        while (cp < end) {
+            c = *cp;
+            cp++;
+            if (c == '\n') {
+                buffer[i++] = '\\';
+                buffer[i++] = 'n';
+            } else if ( c == ' ' ) {
+                if (!insp)
+                    buffer[i++] = c;
+                insp = yes;
+            } else {
+                buffer[i++] = c;
+                insp = no;
             }
         }
     }
@@ -98,9 +141,10 @@ static void Show_Node( TidyDocImpl* doc, const char *msg, Node *node )
     Bool lex = ((msg[0] == 'l')&&(msg[1] == 'e')) ? yes : no;
     int line = ( doc->lexer ? doc->lexer->lines : 0 );
     int col  = ( doc->lexer ? doc->lexer->columns : 0 );
+    tmbstr src = lex ? "lexer" : "stream";
     SPRTF("R=%d C=%d: ", line, col );
     // DEBUG: Be able to set a TRAP on a SPECIFIC row,col
-    if ((line == 8) && (col == 36)) {
+    if ((line == 67) && (col == 95)) {
         check_me("Show_Node"); // just a debug trap
     }
     if (lexer && lexer->token && 
@@ -108,16 +152,14 @@ static void Show_Node( TidyDocImpl* doc, const char *msg, Node *node )
         if (show_attrs) {
             uint len = node ? node->end - node->start : 0;
             tmbstr cp = node ? get_text_string( lexer, node ) : "NULL";
-            SPRTF("Returning %s TextNode [%s]%u %s\n", msg, cp, len,
-                lex ? "lexer" : "stream");
+            SPRTF("Returning %s TextNode [%s]%u %s\n", msg, cp, len, src );
         } else {
-            SPRTF("Returning %s TextNode %p... %s\n", msg, node,
-                lex ? "lexer" : "stream");
+            SPRTF("Returning %s TextNode %p... %s\n", msg, node, src );
         }
     } else {
+        tmbstr name = node ? node->element ? node->element : "blank" : "NULL";
         if (show_attrs) {
             AttVal* av;
-            tmbstr name = node ? node->element ? node->element : "blank" : "NULL";
             SPRTF("Returning %s node <%s", msg, name);
             if (node) {
                 for (av = node->attributes; av; av = av->next) {
@@ -130,11 +172,10 @@ static void Show_Node( TidyDocImpl* doc, const char *msg, Node *node )
                     }
                 }
             }
-            SPRTF("> %s\n", lex ? "lexer" : "stream");
+            SPRTF("> %s\n", src);
         } else {
             SPRTF("Returning %s node %p <%s>... %s\n", msg, node,
-                node->element ? node->element : "blank",
-                lex ? "lexer" : "stream");
+                name, src );
         }
     }
 }
@@ -214,12 +255,18 @@ int TY_(HTMLVersion)(TidyDocImpl* doc)
     TidyDoctypeModes dtmode = (TidyDoctypeModes)cfg(doc, TidyDoctypeMode);
     Bool xhtml = (cfgBool(doc, TidyXmlOut) || doc->lexer->isvoyager) &&
                  !cfgBool(doc, TidyHtmlOut);
-    Bool html4 = dtmode == TidyDoctypeStrict || dtmode == TidyDoctypeLoose || VERS_FROM40 & dtver;
+    Bool html4 = ((dtmode == TidyDoctypeStrict) || (dtmode == TidyDoctypeLoose) ||
+                  (VERS_FROM40 & dtver) ? yes : no);
+    Bool html5 = (!html4 && ((dtmode == TidyDoctypeAuto) ||
+                  (dtmode == TidyDoctypeHtml5)) ? yes : no);
 
     if (xhtml && dtver == VERS_UNKNOWN) return XH50;
     if (dtver == VERS_UNKNOWN) return HT50;
     /* Issue #167 - if NOT XHTML, and doctype is default VERS_HTML5, then return HT50 */
     if (!xhtml && (dtver == VERS_HTML5)) return HT50;
+    /* Issue #377 - If xhtml and (doctype == html5) and constrained vers contains XH50 return that,
+       and really if tidy defaults to 'html5', then maybe 'auto' should also apply! */
+    if (xhtml && html5 && ((vers & VERS_HTML5) == XH50)) return XH50;
 
     for (i = 0; W3C_Doctypes[i].name; ++i)
     {
@@ -285,12 +332,105 @@ static uint GetVersFromFPI(ctmbstr fpi)
     return 0;
 }
 
+#if (defined(_MSC_VER) && !defined(NDEBUG))
+/* Issue #377 - Output diminishing version bits */
+typedef struct tagV2S {
+    uint bit;
+    ctmbstr val;
+}V2S, *PV2S;
+
+static V2S v2s[] = {
+    { HT20, "HT20" },
+    { HT32, "HT32" },
+    { H40S, "H40S" },
+    { H40T, "H40T" },
+    { H40F, "H40F" },
+    { H41S, "H41S" },
+    { H41T, "H41T" },
+    { H41F, "H41F" },
+    { X10S, "X10S" },
+    { X10T, "X10T" },
+    { X10F, "X10F" },
+    { XH11, "XH11" },
+    { XB10, "XB10" }, /* 4096u */
+    /* { VERS_SUN, "VSUN" }, */
+    /* { VERS_NETSCAPE, "VNET" }, */
+    /* { VERS_MICROSOFT, "VMIC" }, 32768u */
+    { VERS_XML, "VXML" }, /* 65536u */
+        /* HTML5 */
+    { HT50, "HT50" }, /* 131072u */
+    { XH50, "XH50" }, /* 262144u */
+    { 0,     0  }
+};
+
+/* Process the above table, adding a bit name,
+   or '----' when not present   */
+static char *add_vers_string( tmbstr buf, uint vers )
+{
+    PV2S pv2s = v2s;
+    int len = (int)strlen(buf);
+    while (pv2s->val) {
+        if (vers & pv2s->bit) {
+            if (len) {
+                strcat(buf,"|");
+                len++;
+            }
+            strcat(buf,pv2s->val);
+            len += (int)strlen(pv2s->val);
+            vers &= ~(pv2s->bit);
+            if (!vers)
+                break;
+        } else {
+            if (len) {
+                strcat(buf,"|");
+                len++;
+            }
+            strcat(buf,"----");
+            len += 4;
+
+        }
+        pv2s++;
+    }
+    if (vers) { /* Should not have any here! */
+        if (len)
+            strcat(buf,"|");
+        sprintf(EndBuf(buf),"%u",vers);
+    }
+    return buf;
+
+}
+
+/* Issue #377 - Show first Before: list, and then on any change
+   Note the VERS_PROPRIETARY are exclude since they always remain */
+void TY_(ConstrainVersion)(TidyDocImpl* doc, uint vers)
+{
+    static char vcur[256];
+    static Bool dnfirst = no;
+    uint curr = doc->lexer->versions; /* get current */
+    doc->lexer->versions &= (vers | VERS_PROPRIETARY);
+    if (curr != doc->lexer->versions) { /* only if different */
+        if (!dnfirst) {
+            dnfirst = yes;
+            vcur[0] = 0;
+            curr &= ~(VERS_PROPRIETARY);
+            add_vers_string( vcur, curr );
+            SPRTF("Before: %s\n", vcur);
+        }
+        vcur[0] = 0;
+        curr = doc->lexer->versions;
+        curr &= ~(VERS_PROPRIETARY);
+        add_vers_string( vcur, curr );
+        SPRTF("After : %s\n", vcur);
+    }
+}
+#else /* !#if (defined(_MSC_VER) && !defined(NDEBUG)) */
 /* everything is allowed in proprietary version of HTML */
 /* this is handled here rather than in the tag/attr dicts */
 void TY_(ConstrainVersion)(TidyDocImpl* doc, uint vers)
 {
     doc->lexer->versions &= (vers | VERS_PROPRIETARY);
 }
+#endif /* #if (defined(_MSC_VER) && !defined(NDEBUG)) y/n */
 
 Bool TY_(IsWhite)(uint c)
 {
@@ -1038,7 +1178,7 @@ static void ParseEntity( TidyDocImpl* doc, GetTokenMode mode )
                 int replaceMode = DISCARDED_CHAR;
             
                 /* Always assume Win1252 in this circumstance. */
-				c1 = TY_(DecodeWin1252)( ch );
+                c1 = TY_(DecodeWin1252)( ch );
 
                 if ( c1 )
                     replaceMode = REPLACED_CHAR;
@@ -1750,7 +1890,7 @@ Bool TY_(SetXHTMLDocType)( TidyDocImpl* doc )
         TY_(RepairAttrValue)(doc, doctype, sys, "");
         break;
     case TidyDoctypeAuto:
-        if (lexer->doctype == VERS_UNKNOWN) {
+        if (lexer->doctype == VERS_UNKNOWN || lexer->doctype == VERS_HTML5) {
           lexer->versionEmitted = XH50;
           return yes;
         }
@@ -1830,7 +1970,8 @@ Bool TY_(FixDocType)( TidyDocImpl* doc )
     if (doctype && (dtmode == TidyDoctypeAuto) &&
         (lexer->doctype == VERS_HTML5) )
     {
-        lexer->versionEmitted = lexer->doctype;
+        /* The version emitted cannot be a composite value! */
+        lexer->versionEmitted = HT50;
         return yes;
     }
     if (dtmode == TidyDoctypeAuto &&
@@ -2150,8 +2291,10 @@ static Node *GetCDATA( TidyDocImpl* doc, Node *container )
                 SetLexerLocus( doc, lexer );
                 lexer->columns -= 3;
 
-                /* if javascript insert backslash before / */
-                if (TY_(IsJavaScript)(container))
+                /*\ if javascript insert backslash before / 
+                 *  Issue #348 - Add option, escape-scripts, to skip
+                \*/
+                if ((TY_(IsJavaScript)(container)) && cfgBool(doc, TidyEscapeScripts))
                 {
                     /* Issue #281 - only warn if adding the escape! */
                     TY_(ReportError)(doc, NULL, NULL, BAD_CDATA_CONTENT);
@@ -2266,8 +2409,11 @@ Node* TY_(GetToken)( TidyDocImpl* doc, GetTokenMode mode )
     assert( !(lexer->pushed || lexer->itoken) );
 
     /* at start of block elements, unclosed inline
-       elements are inserted into the token stream */
-    if (lexer->insert || lexer->inode) {
+       elements are inserted into the token stream 
+       Issue #341 - Can NOT insert a token if NO istacksize  
+     */
+    if ((lexer->insert || lexer->inode) && lexer->istacksize)
+    {
         /*\ Issue #92: could fix by the following, but instead chose not to stack these 2
          *  if ( !(lexer->insert && (nodeIsINS(lexer->insert) || nodeIsDEL(lexer->insert))) ) {
         \*/
@@ -2608,14 +2754,11 @@ static Node* GetTokenFromStream( TidyDocImpl* doc, GetTokenMode mode )
                     continue;       /* no text so keep going */
                 }
 
-                /* fix for bug 762102 */
-                if (c == '&')
-                {
-                    TY_(UngetChar)(c, doc->docIn);
-                    --(lexer->lexsize);
-                }
-
                 /* otherwise treat as CDATA */
+                /* fix for bug 762102 (486) */
+                /* Issue #384 - Fix skipping parsing character, particularly '<<' */
+                TY_(UngetChar)(c, doc->docIn);
+                lexer->lexsize -= 1;
                 lexer->state = LEX_CONTENT;
                 lexer->waswhite = no;
                 continue;
@@ -2708,26 +2851,8 @@ static Node* GetTokenFromStream( TidyDocImpl* doc, GetTokenMode mode )
                 }
                 else if ( !cfgBool(doc, TidyXmlTags) )
                 {
-                    Node* curr = lexer->token;
-                    TY_(ConstrainVersion)( doc, curr->tag->versions );
-                    
-                    if ( curr->tag->versions & VERS_PROPRIETARY )
-                    {
-                        if ( !cfgBool(doc, TidyMakeClean) ||
-                             ( !nodeIsNOBR(curr) && !nodeIsWBR(curr) ) )
-                        {
-                            TY_(ReportError)(doc, NULL, curr, PROPRIETARY_ELEMENT );
-
-                            if ( nodeIsLAYER(curr) )
-                                doc->badLayout |= USING_LAYER;
-                            else if ( nodeIsSPACER(curr) )
-                                doc->badLayout |= USING_SPACER;
-                            else if ( nodeIsNOBR(curr) )
-                                doc->badLayout |= USING_NOBR;
-                        }
-                    }
-
-                    TY_(RepairDuplicateAttributes)( doc, curr, no );
+                    TY_(ConstrainVersion)( doc, lexer->token->tag->versions );
+                    TY_(RepairDuplicateAttributes)( doc, lexer->token, no );
                 } else 
                     TY_(RepairDuplicateAttributes)( doc, lexer->token, yes );
 #ifdef TIDY_STORE_ORIGINAL_TEXT

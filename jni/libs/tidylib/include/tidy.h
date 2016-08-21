@@ -645,12 +645,18 @@ typedef Bool (TIDY_CALL *TidyReportFilter)( TidyDoc tdoc, TidyReportLevel lvl,
 typedef Bool (TIDY_CALL *TidyReportFilter2)( TidyDoc tdoc, TidyReportLevel lvl,
                                            uint line, uint col, ctmbstr mssg, va_list args );
 
+typedef Bool (TIDY_CALL *TidyReportFilter3)( TidyDoc tdoc, TidyReportLevel lvl,
+                                                uint line, uint col, ctmbstr code, va_list args );
+
 /** Give Tidy a filter callback to use */
 TIDY_EXPORT Bool TIDY_CALL    tidySetReportFilter( TidyDoc tdoc,
                                                   TidyReportFilter filtCallback );
 
 TIDY_EXPORT Bool TIDY_CALL    tidySetReportFilter2( TidyDoc tdoc,
                                                   TidyReportFilter2 filtCallback );
+
+TIDY_EXPORT Bool TIDY_CALL    tidySetReportFilter3( TidyDoc tdoc,
+                                                       TidyReportFilter3 filtCallback );
 
 /** Set error sink to named file */
 TIDY_EXPORT FILE* TIDY_CALL   tidySetErrorFile( TidyDoc tdoc, ctmbstr errfilnam );
@@ -738,9 +744,13 @@ TIDY_EXPORT int TIDY_CALL         tidySaveStdout( TidyDoc tdoc );
 /** Save to given TidyBuffer object */
 TIDY_EXPORT int TIDY_CALL         tidySaveBuffer( TidyDoc tdoc, TidyBuffer* buf );
 
-/** Save document to application buffer.  If buffer is not big enough,
-**  ENOMEM will be returned and the necessary buffer size will be placed
-**  in *buflen.
+/** Save document to application buffer.  If TidyShowMarkup and
+**  the document has no errors, or TidyForceOutput, the current 
+**  document, per the current configuration, will be Pretty Printed
+**  to the application buffer.  The document byte length,
+**  not character length, will be placed in *buflen. The document 
+**  will not be null terminated. If the buffer is not big enough,
+**  ENOMEM will be returned, else the actual document status.
 */
 TIDY_EXPORT int TIDY_CALL         tidySaveString( TidyDoc tdoc,
                                                  tmbstr buffer, uint* buflen );

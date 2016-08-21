@@ -58,6 +58,7 @@ struct _TidyDocImpl
     StreamOut*          errout;
     TidyReportFilter    mssgFilt;
     TidyReportFilter2   mssgFilt2;
+    TidyReportFilter3   mssgFilt3;
     TidyOptCallback     pOptCallback;
     TidyPPProgress      progressCallback;
 
@@ -74,6 +75,8 @@ struct _TidyDocImpl
     uint                badLayout;   /* for bad style errors */
     uint                badChars;    /* for bad char encodings */
     uint                badForm;     /* bit field, for badly placed form tags, or other format errors */
+
+    Bool                HTML5Mode;  /* current mode is html5 */
 
     /* Memory allocator */
     TidyAllocator*      allocator;
@@ -141,12 +144,12 @@ int          TY_(DocParseStream)( TidyDocImpl* impl, StreamIn* in );
  */
 typedef enum
 {
-	ContinueTraversal,	     /* visit siblings and children */
-	SkipChildren,			 /* visit siblings of this node; ignore its children */
-	SkipSiblings,			 /* ignore subsequent siblings of this node; ignore their children; traverse  */
-	SkipChildrenAndSiblings, /* visit siblings of this node; ignore its children */
-	VisitParent,			 /* REVERSE traversal: visit the parent of the current node */
-	ExitTraversal			 /* terminate traversal on the spot */
+    ContinueTraversal,       /* visit siblings and children */
+    SkipChildren,            /* visit siblings of this node; ignore its children */
+    SkipSiblings,            /* ignore subsequent siblings of this node; ignore their children; traverse  */
+    SkipChildrenAndSiblings, /* visit siblings of this node; ignore its children */
+    VisitParent,             /* REVERSE traversal: visit the parent of the current node */
+    ExitTraversal            /* terminate traversal on the spot */
 } NodeTraversalSignal;
 
 typedef NodeTraversalSignal NodeTraversalCallBack(TidyDocImpl* doc, Node* node, void *propagate);

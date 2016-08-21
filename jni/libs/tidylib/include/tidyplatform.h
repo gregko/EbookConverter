@@ -60,6 +60,11 @@ extern "C" {
 #define SUPPORT_ACCESSIBILITY_CHECKS 1
 #endif
 
+/* Enable/disable support for additional languages */
+#ifndef SUPPORT_LOCALIZATIONS
+#define SUPPORT_LOCALIZATIONS 1
+#endif
+
 
 /* Convenience defines for Mac platforms */
 
@@ -401,7 +406,7 @@ extern "C" {
 #if PRESERVE_FILE_TIMES
 
 #ifndef HAS_FUTIME
-#if defined(CYGWIN_OS) || defined(BE_OS) || defined(OS2_OS) || defined(HPUX_OS) || defined(SOLARIS_OS) || defined(LINUX_OS) || defined(BSD_BASED_OS) || defined(MAC_OS) || defined(__MSL__) || defined(IRIX_OS) || defined(AIX_OS) || defined(__BORLANDC__)
+#if defined(CYGWIN_OS) || defined(BE_OS) || defined(OS2_OS) || defined(HPUX_OS) || defined(SOLARIS_OS) || defined(LINUX_OS) || defined(BSD_BASED_OS) || defined(MAC_OS) || defined(__MSL__) || defined(IRIX_OS) || defined(AIX_OS) || defined(__BORLANDC__) || defined(__GLIBC__)
 #define HAS_FUTIME 0
 #else
 #define HAS_FUTIME 1
