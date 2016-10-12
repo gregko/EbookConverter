@@ -157,9 +157,10 @@
     <ClCompile Include="src\gdoc.c" />
     <ClCompile Include="src\iconvtc.c" />
     <ClCompile Include="src\istack.c" />
+    <ClCompile Include="src\language.c" />
     <ClCompile Include="src\lexer.c" />
-    <ClCompile Include="src\localize.c" />
     <ClCompile Include="src\mappedio.c" />
+    <ClCompile Include="src\message.c" />
     <ClCompile Include="src\parser.c" />
     <ClCompile Include="src\pprint.c" />
     <ClCompile Include="src\sprtf.c" />

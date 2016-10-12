@@ -66,9 +66,6 @@
     <ClCompile Include="src\lexer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\localize.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\mappedio.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -100,6 +97,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\win32tc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\language.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\message.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

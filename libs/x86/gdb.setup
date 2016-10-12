@@ -1,2 +1,0 @@
-set solib-search-path ./obj/local/x86
-directory C:/android/android-sdk/ndk-bundle/build//../platforms/android-14/arch-x86/usr/include C:/android/android-sdk/ndk-bundle/build//../sources/cxx-stl/stlport/stlport C:/android/android-sdk/ndk-bundle/build//../sources/cxx-stl//gabi++/include jni jni/libs/fb2toepub jni/libs/libs/fb2toepub/tiniconv jni/libs/unzip101e/ jni/libs/libiconv jni/libs/libiconv/include jni/libs/libiconv/libcharset/include jni/libs/libxml2/include jni/libs/zlib jni/libs/tidylib/src jni/libs/tidylib/include
