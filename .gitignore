@@ -45,3 +45,4 @@ AndroidStripError.txt
 
 /build/
 /.gradle/
+/obj/
