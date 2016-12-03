@@ -14,7 +14,7 @@
 // unzip101e headers
 #include <zip.h>
 
-#define WANT_TIDY_CLEANUP
+// #define WANT_TIDY_CLEANUP // Nov. 18, 2016 - disconnecting TidyLib
 #ifdef WANT_TIDY_CLEANUP
 	typedef unsigned long ulong;
 #   include "tidy.h"

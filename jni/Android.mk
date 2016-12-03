@@ -15,8 +15,7 @@ LOCAL_STATIC_LIBRARIES := libmobi fb2toepub
 # Note: I use LOCAL_WHOLE_STATIC_LIBRARIES for the libs below, as I need to call
 # some functions from them in my larger project. If this is not necessary, lump
 # them all together in LOCAL_STATIC_LIBRARIES
-LOCAL_WHOLE_STATIC_LIBRARIES := unzip101e libiconv libxml2 tidylib
-
+LOCAL_WHOLE_STATIC_LIBRARIES := unzip101e libiconv libxml2
 LOCAL_SHARED_LIBRARIES := 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -32,8 +31,8 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/libiconv/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/libiconv/libcharset/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/zlib
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/unzip101e
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/src
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/include
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/src
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/include
 
 LOCAL_SRC_FILES += libs/libmobi/src/buffer.c
 LOCAL_SRC_FILES += libs/libmobi/src/compression.c
@@ -138,47 +137,6 @@ LOCAL_CFLAGS += -Wno-write-strings
 LOCAL_SRC_FILES += libs/unzip101e/unzip.c
 LOCAL_SRC_FILES += libs/unzip101e/ioapi.c
 LOCAL_SRC_FILES += libs/unzip101e/zip.c
-
-include $(BUILD_STATIC_LIBRARY)
-
-################################################################################
-# tidylib
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := tidylib
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/src
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/tidylib/include
-# NDEBUG define needed to shut up printing debug info in debug builds.
-LOCAL_CFLAGS += -Wno-write-strings -DNDEBUG -DCYGWIN_OS
-
-LOCAL_SRC_FILES += libs/tidylib/src/access.c
-LOCAL_SRC_FILES += libs/tidylib/src/alloc.c
-LOCAL_SRC_FILES += libs/tidylib/src/attrask.c
-LOCAL_SRC_FILES += libs/tidylib/src/attrdict.c
-LOCAL_SRC_FILES += libs/tidylib/src/attrget.c
-LOCAL_SRC_FILES += libs/tidylib/src/attrs.c
-LOCAL_SRC_FILES += libs/tidylib/src/buffio.c
-LOCAL_SRC_FILES += libs/tidylib/src/charsets.c
-LOCAL_SRC_FILES += libs/tidylib/src/clean.c
-LOCAL_SRC_FILES += libs/tidylib/src/config.c
-LOCAL_SRC_FILES += libs/tidylib/src/entities.c
-LOCAL_SRC_FILES += libs/tidylib/src/fileio.c
-LOCAL_SRC_FILES += libs/tidylib/src/gdoc.c
-LOCAL_SRC_FILES += libs/tidylib/src/iconvtc.c
-LOCAL_SRC_FILES += libs/tidylib/src/istack.c
-LOCAL_SRC_FILES += libs/tidylib/src/language.c
-LOCAL_SRC_FILES += libs/tidylib/src/lexer.c
-LOCAL_SRC_FILES += libs/tidylib/src/mappedio.c
-LOCAL_SRC_FILES += libs/tidylib/src/message.c
-LOCAL_SRC_FILES += libs/tidylib/src/parser.c
-LOCAL_SRC_FILES += libs/tidylib/src/pprint.c
-LOCAL_SRC_FILES += libs/tidylib/src/sprtf.c
-LOCAL_SRC_FILES += libs/tidylib/src/streamio.c
-LOCAL_SRC_FILES += libs/tidylib/src/tagask.c
-LOCAL_SRC_FILES += libs/tidylib/src/tags.c
-LOCAL_SRC_FILES += libs/tidylib/src/tidylib.c
-LOCAL_SRC_FILES += libs/tidylib/src/tmbstr.c
-LOCAL_SRC_FILES += libs/tidylib/src/utf8.c
 
 include $(BUILD_STATIC_LIBRARY)
 
