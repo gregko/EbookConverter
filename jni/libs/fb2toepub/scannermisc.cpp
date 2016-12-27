@@ -100,9 +100,8 @@ void LexScanner::SkipElement()
 //-----------------------------------------------------------------------
 void LexScanner::CheckAndSkipElement(const String &element)
 {
-	if (!IsNextElement(element))
-		Error("expected element not found");
-    SkipElement();
+	if (IsNextElement(element))
+	    SkipElement();
 }
 
 //-----------------------------------------------------------------------
