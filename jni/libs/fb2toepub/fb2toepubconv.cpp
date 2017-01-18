@@ -23,6 +23,11 @@
 #include <sstream>
 #include "converter.h"
 
+int CrashInFb2Convert(char *pc) {
+	*pc = 'F';
+	return 0;
+}
+
 namespace Fb2ToEpub
 {
 
