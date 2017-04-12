@@ -1154,28 +1154,33 @@ void ConverterPass2::a()
     {
         // internal reference
         id = id.substr(1);
-        String file = refidToUnit_[refidToNew_[id]]->file_;
+		//if (id == "_ftn94")
+		//	printf("Break\n");
+		String refidNew = refidToNew_[id];
+		if (refidNew != "") {
+			String file = refidToUnit_[refidNew]->file_;
 
-        // remap it to our new id
-        id = refidToNew_[id];
-        if(id.empty())
-            InternalError(__FILE__, __LINE__, "a() error");
+			// remap it to our new id
+			id = refidToNew_[id];
+			if (id.empty())
+				InternalError(__FILE__, __LINE__, "a() error");
 
-        String anchorid = noteidToAnchorId_[id];
-        if(!anchorid.empty() && AddAnchorid(anchorid))
-        {
-            anchorSet = true;
-            pout_->WriteFmt("<span id=\"%s\">", anchorid.c_str());
-        }
+			String anchorid = noteidToAnchorId_[id];
+			if (!anchorid.empty() && AddAnchorid(anchorid))
+			{
+				anchorSet = true;
+				pout_->WriteFmt("<span id=\"%s\">", anchorid.c_str());
+			}
 
-        pout_->WriteFmt("<a href=\"%s.xhtml#%s\"", file.c_str(), id.c_str());
-        if(!notempty)
-        {
-            pout_->WriteStr("/>");
-            if(anchorSet)
-                pout_->WriteFmt("</span>");
-            return;
-        }
+			pout_->WriteFmt("<a href=\"%s.xhtml#%s\"", file.c_str(), id.c_str());
+			if (!notempty)
+			{
+				pout_->WriteStr("/>");
+				if (anchorSet)
+					pout_->WriteFmt("</span>");
+				return;
+			}
+		}
     }
     pout_->WriteStr(">");
 
