@@ -1037,7 +1037,8 @@ void ConverterPass2::ParseTextAndEndElement (const String &element)
             {
                 std::ostringstream ss;
                 ss << "<" << t.s_ << "> unexpected in <" << element + ">";
-                s_->Error(ss.str());
+                //s_->Error(ss.str());
+				s_->SkipElement();
             }
             continue;
             //</strong>, </emphasis>, </stile>, </a>, </strikethrough>, </sub>, </sup>, </code>, </image>
@@ -1073,6 +1074,7 @@ void ConverterPass2::FictionBook()
         static const String xmlns = "xmlns";
         static const std::size_t xmlns_len = xmlns.length();
         static const String fbID = "http://www.gribuser.ru/xml/fictionbook/2.0", xlID = "http://www.w3.org/1999/xlink";
+		static const String fbID21 = "http://www.gribuser.ru/xml/fictionbook/2.1";
 
         if(!cit->second.compare(fbID))
         {
@@ -1082,6 +1084,14 @@ void ConverterPass2::FictionBook()
                 s_->Error("bad FictionBook namespace definition");
             has_fb = true;
         }
+		else if (!cit->second.compare(fbID21))
+		{
+			if (!cit->first.compare(xmlns))
+				has_emptyfb = true;
+			else if (cit->first.compare(0, xmlns_len + 1, xmlns + ":"))
+				s_->Error("bad FictionBook namespace definition");
+			has_fb = true;
+		}
         else if(!cit->second.compare(xlID))
         {
             if(cit->first.compare(0, xmlns_len+1, xmlns+":"))
@@ -1101,6 +1111,10 @@ void ConverterPass2::FictionBook()
     //<description>
     description();
     //</description>
+
+	//<binary>
+	while (s_->IsNextElement("binary"))
+		binary();
 
     //<body>
     body();
@@ -1224,7 +1238,8 @@ void ConverterPass2::a()
             {
                 std::ostringstream ss;
                 ss << "<" << t.s_ << "> unexpected in <a>";
-                s_->Error(ss.str());
+                //s_->Error(ss.str());
+				s_->SkipElement();
             }
             continue;
             //</strong>, </emphasis>, </stile>, </strikethrough>, </sub>, </sup>, </code>, </image>
@@ -1269,7 +1284,8 @@ void ConverterPass2::annotation(bool startUnit)
         {
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <annotation>";
-            s_->Error(ss.str());
+            //s_->Error(ss.str());
+			s_->SkipElement();
         }
         //</p>, </poem>, </cite>, </subtitle>, </empty-line>, </table>
     }
@@ -1284,14 +1300,12 @@ void ConverterPass2::author()
     s_->BeginNotEmptyElement("author");
 
     String author;
-    if(s_->IsNextElement("first-name"))
-    {
-        author = s_->SimpleTextElement("first-name");
-
+    if(s_->IsNextElement("first-name")) {
         if(s_->IsNextElement("middle-name"))
             author = Concat(author, " ", s_->SimpleTextElement("middle-name"));
 
-        author = Concat(author, " ", s_->SimpleTextElement("last-name"));
+		if (s_->IsNextElement("last-name"))
+			author = Concat(author, " ", s_->SimpleTextElement("last-name"));
     }
     else if(s_->IsNextElement("nickname"))
         author = s_->SimpleTextElement("nickname");
@@ -1436,7 +1450,8 @@ void ConverterPass2::cite()
         {
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <cite>";
-            s_->Error(ss.str());
+            //s_->Error(ss.str());
+			s_->SkipElement();
         }
         //</p>, </subtitle>, </empty-line>, </poem>, </table>
     }
@@ -1643,7 +1658,8 @@ void ConverterPass2::epigraph()
         {
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <epigraph>";
-            s_->Error(ss.str());
+            //s_->Error(ss.str());
+			s_->SkipElement();
         }
         //</p>, </poem>, </cite>, </empty-line>
     }
@@ -1941,7 +1957,8 @@ void ConverterPass2::section(const char* tag)
             {
                 std::ostringstream ss;
                 ss << "<" << t.s_ << "> unexpected in <section>";
-                s_->Error(ss.str());
+                //s_->Error(ss.str());
+				s_->SkipElement();
             }
             //</p>, </image>, </poem>, </subtitle>, </cite>, </empty-line>, </table>
 
@@ -2167,7 +2184,8 @@ void ConverterPass2::title(bool startUnit, const String &anchorid)
         {
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <title>";
-            s_->Error(ss.str());
+            //s_->Error(ss.str());
+			s_->SkipElement();
         }
     }
     if(!anchorid.empty())

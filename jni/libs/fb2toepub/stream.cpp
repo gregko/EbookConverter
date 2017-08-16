@@ -92,11 +92,7 @@ size_t InFileStm::Read(void *buffer, size_t max_cnt)
     }
 
     cnt += ::fread(cb, 1, max_cnt - cnt, f_);
-#ifdef _WIN32
 	if (cnt != max_cnt && !::feof(f_))
-#else
-	if (cnt != max_cnt && (f_->_flags  & __SEOF) == 0) // !::ferror(f_))
-#endif		
         IOError(name_, "fread error");
 
     return cnt;

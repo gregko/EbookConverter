@@ -214,7 +214,8 @@ void ConverterPass1::ParseTextAndEndElement(const String &element, String *plain
             {
                 std::ostringstream ss;
                 ss << "<" << t.s_ << "> unexpected in <" << element + ">";
-                s_->Error(ss.str());
+                //s_->Error(ss.str());
+				s_->SkipElement();
             }
             continue;
             //</strong>, </emphasis>, </stile>, </a>, </strikethrough>, </sub>, </sup>, </code>, </image>
@@ -237,6 +238,7 @@ void ConverterPass1::FictionBook()
         static const String xmlns = "xmlns";
         static const std::size_t xmlns_len = xmlns.length();
         static const String fbID = "http://www.gribuser.ru/xml/fictionbook/2.0", xlID = "http://www.w3.org/1999/xlink";
+		static const String fbID21 = "http://www.gribuser.ru/xml/fictionbook/2.1";
 
         if(!cit->second.compare(fbID))
         {
@@ -246,6 +248,14 @@ void ConverterPass1::FictionBook()
                 s_->Error("bad FictionBook namespace definition");
             has_fb = true;
         }
+		else if (!cit->second.compare(fbID21))
+		{
+			if (!cit->first.compare(xmlns))
+				has_emptyfb = true;
+			else if (cit->first.compare(0, xmlns_len + 1, xmlns + ":"))
+				s_->Error("bad FictionBook namespace definition");
+			has_fb = true;
+		}
         else if(!cit->second.compare(xlID))
         {
             if(cit->first.compare(0, xmlns_len+1, xmlns+":"))
@@ -267,7 +277,9 @@ void ConverterPass1::FictionBook()
     //</description>
 
     //<body>
-    body(Unit::MAIN);
+	while (!s_->IsNextElement("body"))
+		s_->SkipElement();
+	body(Unit::MAIN);
     if(s_->IsNextElement("body"))
         body(Unit::NOTES);
     if(s_->IsNextElement("body"))
@@ -327,7 +339,8 @@ void ConverterPass1::a(String *plainText)
             {
                 std::ostringstream ss;
                 ss << "<" << t.s_ << "> unexpected in <a>";
-                s_->Error(ss.str());
+                //s_->Error(ss.str());
+				s_->SkipElement();
             }
             continue;
             //</strong>, </emphasis>, </stile>, </strikethrough>, </sub>, </sup>, </code>, </image>
@@ -365,7 +378,8 @@ void ConverterPass1::annotation(bool startUnit)
         {
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <annotation>";
-            s_->Error(ss.str());
+            //s_->Error(ss.str());
+			s_->SkipElement();
         }
         //</p>, </poem>, </cite>, </subtitle>, </empty-line>, </table>
     }
@@ -452,7 +466,8 @@ void ConverterPass1::cite()
         {
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <cite>";
-            s_->Error(ss.str());
+            //s_->Error(ss.str());
+			s_->SkipElement();
         }
         //</p>, </subtitle>, </empty-line>, </poem>, </table>
     }
@@ -536,7 +551,8 @@ void ConverterPass1::epigraph()
         {
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <epigraph>";
-            s_->Error(ss.str());
+            //s_->Error(ss.str());
+			s_->SkipElement();
         }
         //</p>, </poem>, </cite>, </empty-line>
     }
@@ -706,7 +722,8 @@ void ConverterPass1::section(int parent, const char* tag)
             {
                 std::ostringstream ss;
                 ss << "<" << t.s_ << "> unexpected in <section>";
-                s_->Error(ss.str());
+                // s_->Error(ss.str());
+				s_->SkipElement();
             }
             //</p>, </image>, </poem>, </subtitle>, </cite>, </empty-line>, </table>
 
@@ -870,7 +887,8 @@ void ConverterPass1::title(String *plainText, bool startUnit)
         {
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <title>";
-            s_->Error(ss.str());
+            //s_->Error(ss.str());
+			s_->SkipElement();
         }
     }
 
