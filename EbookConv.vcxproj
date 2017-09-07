@@ -76,6 +76,32 @@
   <ItemGroup>
     <Text Include="AndroidStripError.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\atVoice\Native\charsetdetectLib\charsetdetectLib.vcxproj">
+      <Project>{1c6d283a-bd9a-47cc-889d-0cb314de001d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\atVoice\Native\chsdecodeLib\chsdecodeLib.vcxproj">
+      <Project>{60ab9ddb-6818-4981-b268-a0acb9f9ef3c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\atVoice\Native\doctotextLib\doctotextLib.vcxproj">
+      <Project>{0e30fed8-701b-4745-9e84-569fcedd87d7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\atVoice\Native\htmlcxxLib\htmlcxxLib.vcxproj">
+      <Project>{8396e25a-dc71-4ba6-b270-9564d983fc85}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\atVoice\Native\LicenseLib\LicenseLib.vcxproj">
+      <Project>{061c3de9-c9f1-447f-9af4-baa05d1101a7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\atVoice\Native\pdfSupportLib\pdfSupportLib.vcxproj">
+      <Project>{41a766cb-8c93-476a-9fb1-d5036a932005}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\atVoice\Native\VorbisLib\VorbisLib.vcxproj">
+      <Project>{48fa4655-0503-4c6f-a817-5b0f47e10d3d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\atVoice\Native\wv2Lib\wv2Lib.vcxproj">
+      <Project>{f47eb00d-844a-4ea3-831f-edf8e2120d40}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
