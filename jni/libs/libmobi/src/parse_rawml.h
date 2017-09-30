@@ -16,7 +16,7 @@
 #include "config.h"
 #include "mobi.h"
 
-#define MOBI_ATTRNAME_MAXSIZE 100 /**< Maximum length of tag attribute name, like "href" */
+#define MOBI_ATTRNAME_MAXSIZE 150 /**< Maximum length of tag attribute name, like "href" */
 #define MOBI_ATTRVALUE_MAXSIZE 512 /**< Maximum length of tag attribute value */
 
 /**
