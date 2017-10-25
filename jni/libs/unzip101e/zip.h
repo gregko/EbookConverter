@@ -208,6 +208,11 @@ extern int ZEXPORT zipWriteInFileInZip OF((zipFile file,
   Write data in the zipfile
 */
 
+extern uLong ZEXPORT zipBytesWritten(zipFile file);
+/*
+  Total number of files written into current stream
+*/
+
 extern int ZEXPORT zipCloseFileInZip OF((zipFile file));
 /*
   Close the current file in the zipfile

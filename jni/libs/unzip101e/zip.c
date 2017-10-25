@@ -963,6 +963,11 @@ local int zipFlushWriteBuffer(zi)
     return err;
 }
 
+extern uLong ZEXPORT zipBytesWritten(zipFile file) {
+	zip_internal* zi;
+	return zi->ci.stream.total_out;
+}
+
 extern int ZEXPORT zipWriteInFileInZip (file, buf, len)
     zipFile file;
     const void* buf;
