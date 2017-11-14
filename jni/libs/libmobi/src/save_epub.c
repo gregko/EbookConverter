@@ -339,10 +339,40 @@ int convertMobiToEpub(const char* mobiFn, const char* epubFn, const char* pid, b
 		mobi_free(m);
 		return ERROR;
 	}
-	/* Save parts to files */
-	int ret = epub_rawml_parts(rawml, epubFn);
-	if (ret != SUCCESS) {
-		printf("Dumping parts to EPUB failed\n");
+	int ret = SUCCESS;
+	if (rawml->flow->type == T_PDF) {
+		printf("This is Replica Print ebook (azw4), got PDF resource.\n");
+#if defined(_DEBUG) && defined(WIN32)
+		int len = strlen(epubFn) + 16;
+		char *pdfFn = malloc(len);
+		strncpy(pdfFn, epubFn, len);
+		for (char *pc = pdfFn + strlen(pdfFn); pc > pdfFn; pc--) {
+			if (*pc == '.') {
+				*pc = 0;
+				break;
+			}
+		}
+		strncat(pdfFn, ".pdf", 5);
+		FILE* fp = fopen(pdfFn, "wb");
+		free(pdfFn);
+		if (fp != NULL) {
+			char *pc = (char*)rawml->flow->data;
+			fwrite(rawml->flow->data, 1, rawml->flow->size, fp);
+			char *s = "\n%HyperionicsAvarOrg: c:/tmp/TestFileName.pdf\n";
+			fwrite(s, 1, strlen(s), fp);
+			fclose(fp);
+			ret = 101;
+		}
+#endif
+		if (ret != 101)
+			ret = ERROR;
+	}
+	else {
+		/* Save parts to files */
+		ret = epub_rawml_parts(rawml, epubFn);
+		if (ret != SUCCESS) {
+			printf("Dumping parts to EPUB failed\n");
+		}
 	}
 	mobi_free(m);
 	mobi_free_rawml(rawml);
