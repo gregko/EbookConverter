@@ -13,7 +13,12 @@
 #define libmobi_miniz_h
 
 #define MINIZ_HEADER_FILE_ONLY
+#define MINIZ_NO_STDIO
+#define MINIZ_NO_ARCHIVE_APIS
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
+#define MINIZ_NO_TIME
+#define MINIZ_NO_ARCHIVE_WRITING_APIS
+
 #include "miniz.c"
 
 #endif

@@ -73,7 +73,7 @@ static const unsigned char cp1252_to_utf8[32][3] = {
  */
 const char * mobi_version(void) {
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "0.2"
+#define PACKAGE_VERSION "0.3"
 #endif
     return PACKAGE_VERSION;
 }
@@ -120,10 +120,11 @@ uint8_t mobi_unicode_to_utf8(char *output, const size_t codepoint) {
  @brief Convert cp1252 encoded string to utf-8
  
  Maximum length of output string is 3 * (input string length) + 1
+ Output string will be null terminated (even if truncated)
  
  @param[in,out] output Output string
  @param[in,out] input Input string
- @param[in,out] outsize Size of the allocated output buffer, will be set to output string length on return
+ @param[in,out] outsize Size of the allocated output buffer, will be set to output string length (without null terminator) on return
  @param[in] insize Length of the input string.
  @return MOBI_RET status code (on success MOBI_SUCCESS)
  */
@@ -133,7 +134,7 @@ MOBI_RET mobi_cp1252_to_utf8(char *output, const char *input, size_t *outsize, c
     }
     const unsigned char *in = (unsigned char *) input;
     unsigned char *out = (unsigned char *) output;
-    const unsigned char *outend = out + *outsize;
+    const unsigned char *outend = out + *outsize - 1; /* leave space for null terminator */
     const unsigned char *inend = in + insize;
     while (in < inend && out < outend && *in) {
         if (*in < 0x80) {
@@ -142,7 +143,7 @@ MOBI_RET mobi_cp1252_to_utf8(char *output, const char *input, size_t *outsize, c
         else if (*in < 0xa0) {
             /* table lookup */
             size_t i = 0;
-            while (i < 3) {
+            while (i < 3 && out < outend) {
                 unsigned char c = cp1252_to_utf8[*in - 0x80][i];
                 if (c == 0) {
                     break;
@@ -153,6 +154,7 @@ MOBI_RET mobi_cp1252_to_utf8(char *output, const char *input, size_t *outsize, c
             if (i == 0) {
                 /* unmappable character in input */
                 /* substitute with utf-8 replacement character */
+                if (out >= outend - 1) { break; }
                 *out++ = 0xff;
                 *out++ = 0xfd;
                 debug_print("Invalid character found: %c\n", *in);
@@ -160,12 +162,158 @@ MOBI_RET mobi_cp1252_to_utf8(char *output, const char *input, size_t *outsize, c
             in++;
         }
         else if (*in < 0xc0) {
+            if (out >= outend - 1) { break; }
             *out++ = 0xc2;
             *out++ = *in++;
         }
         else {
+            if (out >= outend - 1) { break; }
             *out++ = 0xc3;
             *out++ = (*in++ & 0x3f) + 0x80;
+        }
+    }
+    *out = '\0';
+    *outsize = (size_t) (out - (unsigned char *) output);
+    return MOBI_SUCCESS;
+}
+
+/**
+ @brief Convert utf-8 encoded string to cp1252
+ 
+ Characters out of range will be replaced with substitute character
+ 
+ @param[in,out] output Output string
+ @param[in,out] input Input string
+ @param[in,out] outsize Size of the allocated output buffer, will be set to output string length (without null terminator) on return
+ @param[in] insize Length of the input string.
+ @return MOBI_RET status code (on success MOBI_SUCCESS)
+ */
+MOBI_RET mobi_utf8_to_cp1252(char *output, const char *input, size_t *outsize, const size_t insize) {
+    if (!output || !input) {
+        return MOBI_PARAM_ERR;
+    }
+    const unsigned char *in = (unsigned char *) input;
+    unsigned char *out = (unsigned char *) output;
+    const unsigned char *outend = out + *outsize - 1; /* leave space for null terminator */
+    const unsigned char *inend = in + insize;
+    while (in < inend && out < outend && *in) {
+        /* one byte */
+        if (*in < 0x80) {
+            *out++ = *in++;
+        }
+        /* two bytes */
+        else if ((*in & 0xe0) == 0xc0) {
+            if (in > inend - 2) { break; }
+            if (in[0] == 0xc2 && (in[1] >= 0xa0 && in[1] <= 0xbf)) {
+                *out++ = in[1];
+            } else if (in[0] == 0xc3 && (in[1] >= 0x80 && in[1] <= 0xbf)) {
+                *out++ = in[1] + 0x40;
+            } else if (in[0] == 0xc5) {
+                switch (in[1]) {
+                    case 0xa0:
+                        *out++ = 0x8a;
+                        break;
+                    case 0x92:
+                        *out++ = 0x8c;
+                        break;
+                    case 0xbd:
+                        *out++ = 0x8e;
+                        break;
+                    case 0xa1:
+                        *out++ = 0x9a;
+                        break;
+                    case 0x93:
+                        *out++ = 0x9c;
+                        break;
+                    case 0xbe:
+                        *out++ = 0x9e;
+                        break;
+                    case 0xb8:
+                        *out++ = 0x9f;
+                        break;
+                    default:
+                        *out++ = '?';
+                        break;
+                }
+            } else if (in[0] == 0xc6 && in[1] == 0x92) {
+                *out++ = 0x83;
+            } else if (in[0] == 0xcb && in[1] == 0x86) {
+                *out++ = 0x88;
+            } else {
+                *out++ = '?';
+            }
+            in += 2;
+        }
+        /* three bytes */
+        else if ((*in & 0xf0) == 0xe0) {
+            if (in > inend - 3) { break; }
+            if (in[0] == 0xe2 && in[1] == 0x80) {
+                switch (in[2]) {
+                    case 0x9a:
+                        *out++ = 0x82;
+                        break;
+                    case 0x9e:
+                        *out++ = 0x84;
+                        break;
+                    case 0xa6:
+                        *out++ = 0x85;
+                        break;
+                    case 0xa0:
+                        *out++ = 0x86;
+                        break;
+                    case 0xb0:
+                        *out++ = 0x89;
+                        break;
+                    case 0xb9:
+                        *out++ = 0x8b;
+                        break;
+                    case 0x98:
+                        *out++ = 0x91;
+                        break;
+                    case 0x99:
+                        *out++ = 0x92;
+                        break;
+                    case 0x9c:
+                        *out++ = 0x93;
+                        break;
+                    case 0x9d:
+                        *out++ = 0x94;
+                        break;
+                    case 0xa2:
+                        *out++ = 0x95;
+                        break;
+                    case 0x93:
+                        *out++ = 0x86;
+                        break;
+                    case 0x94:
+                        *out++ = 0x97;
+                        break;
+                    case 0xba:
+                        *out++ = 0x9b;
+                        break;
+                    default:
+                        *out++ = '?';
+                        break;
+                }
+            } else if (in[0] == 0xe2 && in[1] == 0x82 && in[2] == 0xac) {
+                *out++ = 0x80;
+            } else if (in[0] == 0xe2 && in[1] == 0x84 && in[2] == 0xa2) {
+                *out++ = 0x99;
+            } else {
+                *out++ = '?';
+            }
+            in += 3;
+        }
+        /* four bytes */
+        else if ((*in & 0xf8) == 0xf0) {
+            if (in > inend - 4) { break; }
+            *out++ = '?';
+            in += 4;
+        }
+        /* skip error */
+        else {
+            *out++ = '?';
+            in++;
         }
     }
     *out = '\0';
@@ -605,21 +753,89 @@ MOBI_RET mobi_get_fullname(const MOBIData *m, char *fullname, const size_t len) 
         debug_print("%s", "Mobi structure not initialized\n");
         return MOBI_INIT_FAILED;
     }
-    const size_t offset = mobi_get_kf8offset(m);
-    MOBIPdbRecord *record0 = mobi_get_record_by_seqnumber(m, offset);
-    if (m->mh == NULL ||
-        m->mh->full_name_offset == NULL ||
-        m->mh->full_name_length == NULL ||
-        record0 == NULL) {
+    if (m->mh == NULL || m->mh->full_name == NULL) {
         return MOBI_INIT_FAILED;
     }
-    size_t size = min(len, *m->mh->full_name_length);
-    size_t name_offset = *m->mh->full_name_offset;
-    if (name_offset + size > record0->size) {
-        return MOBI_DATA_CORRUPT;
+    if (mobi_is_cp1252(m)) {
+        size_t out_len = len + 1;
+        mobi_cp1252_to_utf8(fullname, m->mh->full_name, &out_len, strlen(m->mh->full_name));
+    } else {
+        strncpy(fullname, m->mh->full_name, len);
+        fullname[len] = '\0';
     }
-    memcpy(fullname, record0->data + name_offset, size);
-    fullname[size] = '\0';
+    return MOBI_SUCCESS;
+}
+
+/**
+ @brief Set ebook full name stored in Record 0 at offset given in MOBI header
+ 
+ @param[in,out] m MOBIData structure with loaded data
+ @param[in] fullname Memory area to be filled with zero terminated full name string
+ @return MOBI_RET status code (on success MOBI_SUCCESS)
+ */
+MOBI_RET mobi_set_fullname(MOBIData *m, const char *fullname) {
+    if (mobi_exists_mobiheader(m) && m->mh->full_name) {
+        size_t title_length = min(strlen(fullname), MOBI_TITLE_SIZEMAX);
+        char *new_title = malloc(title_length + 1);
+        if (new_title == NULL) {
+            return MOBI_MALLOC_FAILED;
+        }
+        if (mobi_is_cp1252(m)) {
+            size_t new_size = title_length + 1;
+            MOBI_RET ret = mobi_utf8_to_cp1252(new_title, fullname, &new_size, title_length);
+            if (ret != MOBI_SUCCESS) {
+                free(new_title);
+                return ret;
+            }
+        } else {
+            memcpy(new_title, fullname, title_length);
+            new_title[title_length] = '\0';
+        }
+        free(m->mh->full_name);
+        m->mh->full_name = new_title;
+        if (mobi_is_hybrid(m) && mobi_exists_mobiheader(m->next) && m->next->mh->full_name) {
+            char *new_title2 = strdup(new_title);
+            if (new_title2 == NULL) {
+                return MOBI_MALLOC_FAILED;
+            }
+            free(m->next->mh->full_name);
+            m->next->mh->full_name = new_title2;
+        }
+    }
+    return MOBI_SUCCESS;
+}
+
+/**
+ @brief Set palm database name
+ 
+ @param[in,out] m MOBIData structure with loaded data
+ @param[in] name Name
+ @return MOBI_RET status code (on success MOBI_SUCCESS)
+ */
+MOBI_RET mobi_set_pdbname(MOBIData *m, const char *name) {
+    if (m == NULL || m->ph == NULL) {
+        return MOBI_INIT_FAILED;
+    }
+    char dbname[PALMDB_NAME_SIZE_MAX + 1];
+    if (mobi_is_cp1252(m)) {
+        size_t size = PALMDB_NAME_SIZE_MAX + 1;
+        MOBI_RET ret = mobi_utf8_to_cp1252(dbname, name, &size, strlen(name));
+        if (ret != MOBI_SUCCESS) {
+            return ret;
+        }
+    } else {
+        memcpy(dbname, name, PALMDB_NAME_SIZE_MAX);
+        dbname[PALMDB_NAME_SIZE_MAX] = '\0';
+    }
+    char c;
+    int i = 0;
+    while ((c = dbname[i])) {
+        if (!isalnum(c)) {
+            c = '_';
+        }
+        m->ph->name[i++] = c;
+    }
+    m->ph->name[i] = '\0';
     return MOBI_SUCCESS;
 }
 
@@ -876,6 +1092,205 @@ MOBIExthHeader * mobi_get_exthrecord_by_tag(const MOBIData *m, const MOBIExthTag
 }
 
 /**
+ @brief Get EXTH record with given MOBIExthTag tag. Start list search at given record.
+ 
+ If start_tag is NULL search will start from the root of the linked list.
+ After successfull search start will be set to next record in the list.
+ 
+ @param[in] m MOBIData structure with loaded data
+ @param[in] tag MOBIExthTag EXTH record tag
+ @param[in,out] start MOBIExthHeader EXTH record to begin search with
+ @return Pointer to MOBIExthHeader record structure
+ */
+MOBIExthHeader * mobi_next_exthrecord_by_tag(const MOBIData *m, const MOBIExthTag tag, MOBIExthHeader **start) {
+    if (m == NULL) {
+        debug_print("%s", "Mobi structure not initialized\n");
+        return NULL;
+    }
+    if (m->eh == NULL) {
+        return NULL;
+    }
+    MOBIExthHeader *curr;
+    if (*start) {
+        curr = *start;
+        *start = NULL;
+    } else {
+        curr = m->eh;
+    }
+    while (curr != NULL) {
+        if (curr->tag == tag) {
+            *start = curr->next;
+            return curr;
+        }
+        curr = curr->next;
+    }
+    return NULL;
+}
+
+/**
+ @brief Add new EXTH record with given tag and value.
+ 
+ @param[in,out] m MOBIData structure with loaded data
+ @param[in] tag MOBIExthTag EXTH record tag
+ @param[in] size Value size
+ @param[in] value Value
+ @return MOBI_RET status code (on success MOBI_SUCCESS)
+ */
+MOBI_RET mobi_add_exthrecord(MOBIData *m, const MOBIExthTag tag, const uint32_t size, const void *value) {
+    if (size == 0) {
+        debug_print("%s\n", "Record size is zero");
+        return MOBI_PARAM_ERR;
+    }
+    size_t count = 2;
+    while (m && count--) {
+        if (m->mh == NULL) {
+            debug_print("%s\n", "Mobi header must be initialized");
+            return MOBI_INIT_FAILED;
+        }
+        MOBIExthMeta meta = mobi_get_exthtagmeta_by_tag(tag);
+        MOBIExthHeader *record = calloc(1, sizeof(MOBIExthHeader));
+        if (record == NULL) {
+            debug_print("%s\n", "Memory allocation for EXTH record failed");
+            return MOBI_MALLOC_FAILED;
+        }
+        record->tag = tag;
+        record->size = size;
+        record->data = malloc(size);
+        if (record->data == NULL) {
+            debug_print("%s\n", "Memory allocation for EXTH data failed");
+            free(record);
+            return MOBI_MALLOC_FAILED;
+        }
+        if (meta.type == EXTH_STRING && mobi_is_cp1252(m)) {
+            char *data = malloc(size + 1);
+            if (data == NULL) {
+                free(record->data);
+                free(record);
+                return MOBI_MALLOC_FAILED;
+            }
+            size_t data_size = size + 1;
+            MOBI_RET ret = mobi_utf8_to_cp1252(data, value, &data_size, size);
+            if (ret != MOBI_SUCCESS) {
+                free(record->data);
+                free(record);
+                free(data);
+                return ret;
+            }
+            memcpy(record->data, data, data_size);
+            record->size = (uint32_t) data_size;
+            free(data);
+        } else if (meta.name && meta.type == EXTH_NUMERIC) {
+            if (size != sizeof(uint32_t)) {
+                free(record->data);
+                free(record);
+                return MOBI_PARAM_ERR;
+            }
+            MOBIBuffer *buf = buffer_init_null(record->data, size);
+            if (buf == NULL) {
+                free(record->data);
+                free(record);
+                return MOBI_MALLOC_FAILED;
+            }
+            buffer_add32(buf, *(uint32_t *) value);
+            buffer_free_null(buf);
+        } else {
+            memcpy(record->data, value, size);
+        }
+        record->next = NULL;
+        if (m->eh == NULL) {
+            if (m->mh->exth_flags == NULL) {
+                m->mh->exth_flags = malloc(sizeof(uint32_t));
+                if (m->mh->exth_flags == NULL) {
+                    debug_print("%s\n", "Memory allocation failed");
+                    free(record->data);
+                    free(record);
+                    return MOBI_MALLOC_FAILED;
+                }
+            }
+            *m->mh->exth_flags = 0x40;
+            m->eh = record;
+        } else {
+            MOBIExthHeader *curr = m->eh;
+            while(curr->next) {
+                curr = curr->next;
+            }
+            curr->next = record;
+        }
+        m = m->next;
+    }
+    return MOBI_SUCCESS;
+}
+
+/**
+ @brief Delete EXTH record.
+ 
+ @param[in,out] m MOBIData structure with loaded data
+ @param[in] record Record to be deleted
+ @return Pointer to next record in the linked list (NULL if none)
+ */
+MOBIExthHeader * mobi_delete_exthrecord(MOBIData *m, MOBIExthHeader *record) {
+    if (record == NULL || m == NULL || m->eh == NULL) {
+        return NULL;
+    }
+    MOBIExthHeader *next = record->next;
+    if (next) {
+        /* not last */
+        free(record->data);
+        record->data = next->data;
+        record->tag = next->tag;
+        record->size = next->size;
+        record->next = next->next;
+        free(next);
+        next = record;
+    } else if (m->eh == record) {
+        /* last && first */
+        free(m->eh->data);
+        free(m->eh);
+        m->eh = NULL;
+    } else {
+        /* last */
+        MOBIExthHeader *curr = m->eh;
+        while (curr) {
+            if (curr->next == record) {
+                curr->next = NULL;
+                break;
+            }
+            curr = curr->next;
+        }
+        free(record->data);
+        free(record);
+    }
+    return next;
+}
+
+/**
+ @brief Delete all EXTH records with given MOBIExthTag tag
+ 
+ @param[in,out] m MOBIData structure with loaded data
+ @param[in] tag MOBIExthTag EXTH record tag
+ @return Pointer to MOBIExthHeader record structure
+ */
+MOBI_RET mobi_delete_exthrecord_by_tag(MOBIData *m, const MOBIExthTag tag) {
+    size_t count = 2;
+    while (m && count--) {
+        if (m->eh == NULL) {
+            debug_print("%s", "No exth records\n");
+            return MOBI_SUCCESS;
+        }
+        MOBIExthHeader *curr = m->eh;
+        while (curr) {
+            if (curr->tag == tag) {
+                curr = mobi_delete_exthrecord(m, curr);
+            } else {
+                curr = curr->next;
+            }
+        }
+        m = m->next;
+    }
+    return MOBI_SUCCESS;
+}
+
+/**
  @brief Array of known EXTH tags.
  Name strings shamelessly copied from KindleUnpack
  */
@@ -1016,7 +1431,7 @@ const HTMLEntity entities[] = {
     { "&gt;", ">" },
     { "&apos;", "'" },
     { "&nbsp;", "\xc2\xa0" },
-    { "&copy;", "\xc2\a9" },
+    { "&copy;", "\xc2\xa9" },
     { "&reg;", "\xc2\xae" },
     { "&cent;", "\xc2\xa2" },
     { "&pound;", "\xc2\xa3" },
@@ -1083,7 +1498,7 @@ char * mobi_decode_htmlentities(const char *input) {
             }
         } else {
             // named entity
-            for (size_t i = 0; i < (sizeof(entities)/sizeof(entities[0])); i++) {
+            for (size_t i = 0; i < ARRAYSIZE(entities); i++) {
                 if (strncmp(in, entities[i].name, strlen(entities[i].name)) == 0) {
                     int ret = snprintf(decoded, MOBI_UTF8_MAXBYTES + 1, "%s", entities[i].utf8_bytes);
                     if (ret > 0) {
@@ -1150,6 +1565,20 @@ char * mobi_decode_exthstring(const MOBIData *m, const unsigned char *data, cons
 }
 
 /**
+ @brief Swap endianness of 32-bit value
+ 
+ @param[in] val 4-byte unsigned integer
+ @return Integer with swapped endianness
+ */
+uint32_t mobi_swap32(const uint32_t val) {
+    return ((((val) >> 24) & 0x000000ff) |
+            (((val) >>  8) & 0x0000ff00) |
+            (((val) <<  8) & 0x00ff0000) |
+            (((val) << 24) & 0xff000000));
+
+}
+
+/**
  @brief Convert time values from palmdoc header to time tm struct
  
  Older files set time in mac format. Newer ones in unix time.
@@ -1159,10 +1588,15 @@ char * mobi_decode_exthstring(const MOBIData *m, const unsigned char *data, cons
  */
 struct tm * mobi_pdbtime_to_time(const long pdb_time) {
     time_t time = pdb_time;
+    const int unix1996 = 820454400;
+    if (time < unix1996 && time > 0) {
+        /* sometimes dates are stored as little endian */
+        time = mobi_swap32((uint32_t) time);
+    }
     const uint32_t mactime_flag = (uint32_t) (1U << 31);
     if (time & mactime_flag) {
-        printf("MAC TIME\n");
-        time += EPOCH_MAC_DIFF;
+        debug_print("%s\n", "mac time");
+        time -= EPOCH_MAC_DIFF;
     }
     return localtime(&time);
 }
@@ -1264,7 +1698,6 @@ static MOBI_RET mobi_decompress_content(const MOBIData *m, char *text, FILE *fil
                 return MOBI_DATA_CORRUPT;
             }
         }
-        const size_t record_size = curr->size - extra_size;
         size_t decompressed_size = mobi_get_textrecord_maxsize(m);
         unsigned char *decompressed = malloc(decompressed_size);
         if (decompressed == NULL) {
@@ -1275,21 +1708,33 @@ static MOBI_RET mobi_decompress_content(const MOBIData *m, char *text, FILE *fil
         MOBI_RET ret = MOBI_SUCCESS;
 #ifdef USE_ENCRYPTION
         if (mobi_is_encrypted(m) && m->drm_key) {
-            size_t decrypt_size = record_size;
             if (compression_type != RECORD0_HUFF_COMPRESSION) {
                 /* decrypt also multibyte extra data */
-                size_t mb_size = mobi_get_record_mb_extrasize(curr, extra_flags);
-                decrypt_size += mb_size;
+                extra_size = mobi_get_record_extrasize(curr, extra_flags & 0xfffe);
+                if (extra_size == MOBI_NOTSET || extra_size >= curr->size) {
+                    free(decompressed);
+                    return MOBI_DATA_CORRUPT;
+                }
             }
-            ret = mobi_decrypt(decompressed, curr->data, decrypt_size, m);
+            const size_t decrypt_size = curr->size - extra_size;
+            ret = mobi_drm_decrypt_buffer(decompressed, curr->data, decrypt_size, m);
             if (ret != MOBI_SUCCESS) {
                 mobi_free_huffcdic(huffcdic);
                 free(decompressed);
                 return ret;
             }
             memcpy(curr->data, decompressed, decrypt_size);
+            if (compression_type != RECORD0_HUFF_COMPRESSION && (extra_flags & 1)) {
+                // update multibyte data size after decryption
+                extra_size = mobi_get_record_extrasize(curr, extra_flags);
+                if (extra_size == MOBI_NOTSET || extra_size >= curr->size) {
+                    free(decompressed);
+                    return MOBI_DATA_CORRUPT;
+                }
+            }
         }
 #endif
+        const size_t record_size = curr->size - extra_size;
         switch (compression_type) {
             case RECORD0_NO_COMPRESSION:
                 /* no compression */
@@ -1300,6 +1745,10 @@ static MOBI_RET mobi_decompress_content(const MOBIData *m, char *text, FILE *fil
                 }
                 memcpy(decompressed, curr->data, record_size);
                 decompressed_size = record_size;
+                if (mobi_exists_mobiheader(m) && mobi_get_fileversion(m) <= 3) {
+                    /* workaround for some old files with null characters inside record */
+                    mobi_remove_zeros(decompressed, &decompressed_size);
+                }
                 break;
             case RECORD0_PALMDOC_COMPRESSION:
                 /* palmdoc lz77 compression */
@@ -1328,7 +1777,7 @@ static MOBI_RET mobi_decompress_content(const MOBIData *m, char *text, FILE *fil
         if (dump) {
             fwrite(decompressed, 1, decompressed_size, file);
         } else {
-            if (text_length > *len) {
+            if (text_length + decompressed_size > *len) {
                 debug_print("%s", "Text buffer too small\n");
                 /* free huff/cdic tables */
                 mobi_free_huffcdic(huffcdic);
@@ -1358,6 +1807,10 @@ static MOBI_RET mobi_decompress_content(const MOBIData *m, char *text, FILE *fil
  @return MOBI_RET status code (on success MOBI_SUCCESS)
  */
 MOBI_RET mobi_get_rawml(const MOBIData *m, char *text, size_t *len) {
+    if (text == NULL || len == NULL) {
+        debug_print("%s", "Parameter error: text or len is NULL\n");
+        return MOBI_PARAM_ERR;
+    }
     if (m->rh->text_length > *len) {
         debug_print("%s", "Text buffer smaller then text size declared in record0 header\n");
         return MOBI_PARAM_ERR;
@@ -1421,7 +1874,7 @@ bool mobi_exists_skel_indx(const MOBIData *m) {
  @return true on success, false otherwise
  */
 bool mobi_exists_fdst(const MOBIData *m) {
-    if (!mobi_exists_mobiheader(m)) {
+    if (!mobi_exists_mobiheader(m) || mobi_get_fileversion(m) <= 3) {
         return false;
     }
     if (mobi_get_fileversion(m) >= 8) {
@@ -1429,7 +1882,8 @@ bool mobi_exists_fdst(const MOBIData *m) {
             return true;
         }
     } else {
-        if (m->mh->fdst_section_count && *m->mh->fdst_section_count > 1) {
+        if ((m->mh->fdst_section_count && *m->mh->fdst_section_count > 1)
+            && (m->mh->last_text_index && *m->mh->last_text_index != (uint16_t) -1)) {
             return true;
         }
     }
@@ -1444,6 +1898,9 @@ bool mobi_exists_fdst(const MOBIData *m) {
  @return Record number on success, MOBI_NOTSET otherwise
  */
 size_t mobi_get_fdst_record_number(const MOBIData *m) {
+    if (!mobi_exists_mobiheader(m)) {
+        return MOBI_NOTSET;
+    }
     const size_t offset = mobi_get_kf8offset(m);
     if (m->mh->fdst_index && *m->mh->fdst_index != MOBI_NOTSET) {
         if (m->mh->fdst_section_count && *m->mh->fdst_section_count > 1) {
@@ -1452,7 +1909,9 @@ size_t mobi_get_fdst_record_number(const MOBIData *m) {
     }
     if (m->mh->fdst_section_count && *m->mh->fdst_section_count > 1) {
         /* FIXME: if KF7, is it safe to asume last_text_index has fdst index */
-        return *m->mh->last_text_index;
+        if (m->mh->last_text_index) {
+            return *m->mh->last_text_index;
+        }
     }
     return MOBI_NOTSET;
 }
@@ -1553,8 +2012,8 @@ MOBIFiletype mobi_determine_flowpart_type(const MOBIRawml *rawml, const size_t p
     if (part_number == 0 || mobi_is_rawml_kf8(rawml) == false) {
         return T_HTML;
     }
-    char target[24];
-    sprintf(target, "\"kindle:flow:%04zu?mime=", part_number);
+    char target[30];
+    snprintf(target, 30, "\"kindle:flow:%04zu?mime=", part_number);
     unsigned char *data_start = rawml->flow->data;
     unsigned char *data_end = data_start + rawml->flow->size - 1;
     MOBIResult result;
@@ -1573,20 +2032,24 @@ MOBIFiletype mobi_determine_flowpart_type(const MOBIRawml *rawml, const size_t p
  @brief Get font type of given font resource
  
  @param[in] font_data Font resource data
+ @param[in] font_size Font resource size
  @return MOBIFiletype file type
  */
-MOBIFiletype mobi_determine_font_type(const unsigned char *font_data) {
+MOBIFiletype mobi_determine_font_type(const unsigned char *font_data, const size_t font_size) {
     const char otf_magic[] = "OTTO";
     const char ttf_magic[] = "\0\1\0\0";
     const char ttf2_magic[] = "true";
 
-    if (memcmp(font_data, otf_magic, 4) == 0) {
-        return T_OTF;
-    } else if (memcmp(font_data, ttf_magic, 4) == 0) {
-        return T_TTF;
-    } else if (memcmp(font_data, ttf2_magic, 4) == 0) {
-        return T_TTF;
+    if (font_size >= 4) {
+        if (memcmp(font_data, otf_magic, 4) == 0) {
+            return T_OTF;
+        } else if (memcmp(font_data, ttf_magic, 4) == 0) {
+            return T_TTF;
+        } else if (memcmp(font_data, ttf2_magic, 4) == 0) {
+            return T_TTF;
+        }
     }
+    debug_print("Unknown font resource type%s", "\n");
     return T_UNKNOWN;
 }
 
@@ -1624,8 +2087,11 @@ MOBI_RET mobi_decode_audio_resource(unsigned char **decoded_resource, size_t *de
         debug_print("Audio resource record too short (%zu)\n", part->size);
         return MOBI_DATA_CORRUPT;
     }
-    MOBIBuffer *buf = buffer_init_null(part->size);
-    buf->data = part->data;
+    MOBIBuffer *buf = buffer_init_null(part->data, part->size);
+    if (buf == NULL) {
+        debug_print("%s\n", "Memory allocation failed");
+        return MOBI_MALLOC_FAILED;
+    }
     char magic[5];
     buffer_getstring(magic, buf, 4);
     if (strncmp(magic, AUDI_MAGIC, 4) != 0) {
@@ -1674,8 +2140,11 @@ MOBI_RET mobi_decode_video_resource(unsigned char **decoded_resource, size_t *de
         debug_print("Video resource record too short (%zu)\n", part->size);
         return MOBI_DATA_CORRUPT;
     }
-    MOBIBuffer *buf = buffer_init_null(part->size);
-    buf->data = part->data;
+    MOBIBuffer *buf = buffer_init_null(part->data, part->size);
+    if (buf == NULL) {
+        debug_print("%s\n", "Memory allocation failed");
+        return MOBI_MALLOC_FAILED;
+    }
     char magic[5];
     buffer_getstring(magic, buf, 4);
     if (strncmp(magic, VIDE_MAGIC, 4) != 0) {
@@ -1688,6 +2157,121 @@ MOBI_RET mobi_decode_video_resource(unsigned char **decoded_resource, size_t *de
     buffer_setpos(buf, offset);
     *decoded_size = buf->maxlen - buf->offset;
     *decoded_resource = buffer_getpointer(buf, *decoded_size);
+    buffer_free_null(buf);
+    return MOBI_SUCCESS;
+}
+
+/**
+ @brief Get embedded source archive
+ 
+ Some mobi creator software store original conversion source as a zip archive.
+ The function may return MOBI_SUCCESS even if the data was not found,
+ so it is neccessary to check whether returned data pointer is not NULL.
+ 
+ @param[in,out] data Pointer to data offset in pdb record.
+ @param[in,out] size Pointer to data size
+ @param[in] m MOBIData structure
+ @return MOBI_RET status code (on success MOBI_SUCCESS)
+ */
+MOBI_RET mobi_get_embedded_source(unsigned char **data, size_t *size, const MOBIData *m) {
+    *data = NULL;
+    *size = 0;
+    if (m == NULL) {
+        return MOBI_INIT_FAILED;
+    }
+    MOBIMobiHeader *header = m->mh;
+    if (mobi_is_hybrid(m) && m->use_kf8 && m->next) {
+        /* SRCS index is in KF7 header */
+        header = m->next->mh;
+    }
+    if (header == NULL || header->srcs_index == NULL || header->srcs_count == NULL ||
+        *header->srcs_index == MOBI_NOTSET || *header->srcs_count == 0) {
+        return MOBI_SUCCESS;
+    }
+    uint32_t index = *header->srcs_index;
+    
+    const MOBIPdbRecord *srcs_record = mobi_get_record_by_seqnumber(m, index);
+    if (srcs_record == NULL) {
+        return MOBI_SUCCESS;
+    }
+    const size_t archive_offset = 16;
+    
+    if (srcs_record->size <= archive_offset) {
+        debug_print("Wrong size of SRCS resource: %zu\n", srcs_record->size);
+        return MOBI_DATA_CORRUPT;
+    }
+
+    if (memcmp(srcs_record->data, SRCS_MAGIC, 4) != 0) {
+        debug_print("Wrong magic for SRCS resource: %c%c%c%c\n",
+                    srcs_record->data[0], srcs_record->data[1], srcs_record->data[2], srcs_record->data[3]);
+        return MOBI_DATA_CORRUPT;
+    }
+    
+    *data = srcs_record->data + archive_offset;
+    *size = srcs_record->size - archive_offset;
+
+    return MOBI_SUCCESS;
+}
+
+/**
+ @brief Get embedded conversion log
+ 
+ Some mobi creator software store original conversion log together with source archive.
+ The function may return MOBI_SUCCESS even if the data was not found,
+ so it is neccessary to check whether returned data pointer is not NULL.
+ 
+ @param[in,out] data Pointer to data offset in pdb record.
+ @param[in,out] size Pointer to data size
+ @param[in] m MOBIData structure
+ @return MOBI_RET status code (on success MOBI_SUCCESS)
+ */
+MOBI_RET mobi_get_embedded_log(unsigned char **data, size_t *size, const MOBIData *m) {
+    *data = NULL;
+    *size = 0;
+    if (m == NULL) {
+        return MOBI_INIT_FAILED;
+    }
+    MOBIMobiHeader *header = m->mh;
+    if (mobi_is_hybrid(m) && m->use_kf8 && m->next) {
+        /* SRCS index is in KF7 header */
+        header = m->next->mh;
+    }
+    if (header == NULL || header->srcs_index == NULL || header->srcs_count == NULL ||
+        *header->srcs_index == MOBI_NOTSET || *header->srcs_count < 2) {
+        return MOBI_SUCCESS;
+    }
+    uint32_t index = *header->srcs_index + 1;
+    
+    const MOBIPdbRecord *srcs_record = mobi_get_record_by_seqnumber(m, index);
+    if (srcs_record == NULL) {
+        return MOBI_SUCCESS;
+    }
+    const size_t log_offset = 12;
+    if (srcs_record->size <= log_offset) {
+        debug_print("Wrong size of CMET resource: %zu\n", srcs_record->size);
+        return MOBI_DATA_CORRUPT;
+    }
+    MOBIBuffer *buf = buffer_init_null(srcs_record->data, srcs_record->size);
+    if (buf == NULL) {
+        return MOBI_MALLOC_FAILED;
+    }
+    if (buffer_match_magic(buf, CMET_MAGIC) == false) {
+        debug_print("%s\n", "Wrong magic for CMET resource");
+        buffer_free_null(buf);
+        return MOBI_DATA_CORRUPT;
+    }
+    buffer_setpos(buf, 8);
+    uint32_t log_length = buffer_get32(buf);
+    unsigned char *log_data = buffer_getpointer(buf, log_length);
+    if (buf->error != MOBI_SUCCESS) {
+        debug_print("CMET resource too short: %zu (log size: %u)\n", srcs_record->size, log_length);
+        buffer_free_null(buf);
+        return MOBI_DATA_CORRUPT;
+    }
+    
+    *data = log_data;
+    *size = log_length;
+    
     buffer_free_null(buf);
     return MOBI_SUCCESS;
 }
@@ -1707,7 +2291,10 @@ MOBI_RET mobi_add_font_resource(MOBIPart *part) {
     }
     part->data = data;
     part->size = size;
-    part->type = mobi_determine_font_type(data);
+    part->type = mobi_determine_font_type(data, size);
+    /* FIXME: mark unknown font types as ttf (shouldn't happen).
+       This will allow proper font resource deallocation. */
+    if (part->type == T_UNKNOWN) { part->type = T_TTF; }
     return MOBI_SUCCESS;
 }
 
@@ -1762,8 +2349,8 @@ MOBI_RET mobi_decode_font_resource(unsigned char **decoded_font, size_t *decoded
         buffer_setpos(buf, h.data_offset);
         const unsigned char *xor_key = buf->data + h.xor_data_off;
         size_t i = 0;
-        /* only xor first 1040 bytes */
-        while (buf->offset < buf->maxlen && i < 1040) {
+        const size_t xor_limit = h.xor_key_len * 52;
+        while (buf->offset < buf->maxlen && i < xor_limit) {
             buf->data[buf->offset++] ^= xor_key[i % h.xor_key_len];
             i++;
         }
@@ -1771,6 +2358,11 @@ MOBI_RET mobi_decode_font_resource(unsigned char **decoded_font, size_t *decoded
     buffer_setpos(buf, h.data_offset);
     *decoded_size = h.decoded_size;
     *decoded_font = malloc(h.decoded_size);
+    if (*decoded_font == NULL) {
+        buffer_free(buf);
+        debug_print("%s", "Memory allocation failed\n");
+        return MOBI_MALLOC_FAILED;
+    }
     const unsigned char *encoded_font = buf->data + buf->offset;
     const unsigned long encoded_size = buf->maxlen - buf->offset;
     if (h.flags & zlib_flag) {
@@ -1810,6 +2402,9 @@ MOBIFiletype mobi_determine_resource_type(const MOBIPdbRecord *record) {
     /* PNG: 89 50 4E 47 0D 0A 1A 0A */
     /* SVG is XML-based format, so stored in flow parts */
     /* FONT: must be decoded */
+    if (record->size < 4) {
+        return T_UNKNOWN;
+    }
     const unsigned char jpg_magic[] = "\xff\xd8\xff";
     const unsigned char gif_magic[] = "\x47\x49\x46\x38";
     const unsigned char png_magic[] = "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a";
@@ -1823,16 +2418,16 @@ MOBIFiletype mobi_determine_resource_type(const MOBIPdbRecord *record) {
         return T_JPG;
     } else if (memcmp(record->data, gif_magic, 4) == 0) {
         return T_GIF;
-    } else if (memcmp(record->data, png_magic, 8) == 0) {
+    } else if (record->size >= 8 && memcmp(record->data, png_magic, 8) == 0) {
         return T_PNG;
     } else if (memcmp(record->data, font_magic, 4) == 0) {
         return T_FONT;
-    } else if (memcmp(record->data, boundary_magic, 8) == 0) {
+    } else if (record->size >= 8 && memcmp(record->data, boundary_magic, 8) == 0) {
         return T_BREAK;
     } else if (memcmp(record->data, eof_magic, 4) == 0) {
         return T_BREAK;
     } else if (memcmp(record->data, bmp_magic, 2) == 0) {
-        const size_t bmp_size = (uint32_t) record->data[2] | (uint32_t) record->data[3] << 8 | (uint32_t) record->data[4] << 16 | (uint32_t) record->data[5] << 24;
+        const size_t bmp_size = mobi_get32le(&record->data[2]);
         if (record->size == bmp_size) {
             return T_BMP;
         }
@@ -1924,14 +2519,27 @@ bool mobi_is_encrypted(const MOBIData *m) {
  @return MOBI document version, 1 if ancient version (no MOBI header) or MOBI_NOTSET if error
  */
 size_t mobi_get_fileversion(const MOBIData *m) {
-    if (m == NULL) {
+    size_t version = 1;
+    if (m == NULL || m->ph == NULL) {
         debug_print("%s", "Mobi structure not initialized\n");
         return MOBI_NOTSET;
     }
-    if (m && m->mh && m->mh->version) {
-        return *m->mh->version;
+    if (strcmp(m->ph->type, "BOOK") == 0 && strcmp(m->ph->creator, "MOBI") == 0) {
+        if (m->mh && m->mh->header_length) {
+            uint32_t header_length = *m->mh->header_length;
+            if (header_length < MOBI_HEADER_V2_SIZE) {
+                version = 2;
+            } else if (m->mh->version && *m->mh->version > 1) {
+                if ((*m->mh->version > 2 && header_length < MOBI_HEADER_V3_SIZE)
+                    || (*m->mh->version > 3 && header_length < MOBI_HEADER_V4_SIZE)
+                    ||(*m->mh->version > 5 && header_length < MOBI_HEADER_V5_SIZE)) {
+                    return MOBI_NOTSET;
+                }
+                version = *m->mh->version;
+            }
+        }
     }
-    return 1;
+    return version;
 }
 
 /**
@@ -1973,6 +2581,13 @@ uint16_t mobi_get_textrecord_maxsize(const MOBIData *m) {
         if (m->rh->text_record_size > RECORD0_TEXT_SIZE_MAX) {
             max_record_size = m->rh->text_record_size;
         }
+        if (mobi_exists_mobiheader(m) && mobi_get_fileversion(m) <= 3) {
+            /* workaround for some old files with records larger than declared record size */
+            size_t text_length = (size_t) max_record_size * m->rh->text_record_count;
+            if (text_length <= RAWTEXT_SIZEMAX && m->rh->text_length > text_length) {
+                max_record_size = RECORD0_TEXT_SIZE_MAX * 2;
+            }
+        }
     }
     return max_record_size;
 }
@@ -1989,6 +2604,12 @@ size_t mobi_get_text_maxsize(const MOBIData *m) {
         if (m->rh->text_record_count > 0) {
             uint16_t max_record_size = mobi_get_textrecord_maxsize(m);
             size_t maxsize = (size_t) m->rh->text_record_count * (size_t) max_record_size;
+            if (mobi_exists_mobiheader(m) && mobi_get_fileversion(m) <= 3) {
+                /* workaround for some old files with records larger than declared record size */
+                if (m->rh->text_length > maxsize) {
+                    maxsize = m->rh->text_length;
+                }
+            }
             if (maxsize > RAWTEXT_SIZEMAX) {
                 debug_print("Raw text too large (%zu)\n", maxsize);
                 return MOBI_NOTSET;
@@ -2131,6 +2752,83 @@ size_t mobi_get_kf8boundary_seqnumber(const MOBIData *m) {
 }
 
 /**
+ @brief Get size of serialized exth record including padding
+ 
+ @param[in] m MOBIData structure
+ @return Size of exth record, zero on failure
+ */
+uint32_t mobi_get_exthsize(const MOBIData *m) {
+    if (m == NULL || m->eh == NULL) {
+        return 0;
+    }
+    size_t size = 0;
+    MOBIExthHeader *curr = m->eh;
+    while (curr) {
+        size += curr->size + 8;
+        curr = curr->next;
+    }
+    if (size > 0) {
+        /* add header size */
+        size += 12;
+        /* add padding */
+        size += size % 4;
+    }
+    if (size > UINT32_MAX) {
+        return 0;
+    } else {
+        return (uint32_t) size;
+    }
+}
+
+/**
+ @brief Get count of palm database records
+ 
+ @param[in] m MOBIData structure
+ @return Count of records, zero on failure
+ */
+uint16_t mobi_get_records_count(const MOBIData *m) {
+    size_t count = 0;
+    if (m->rec) {
+        MOBIPdbRecord *curr = m->rec;
+        while (curr) {
+            count++;
+            curr = curr->next;
+        }
+    }
+    if (count > UINT16_MAX) {
+        return 0;
+    } else {
+        return (uint16_t) count;
+    }
+}
+
+/**
+ @brief Remove null characters from char buffer
+ 
+ @param[in,out] buffer Character buffer
+ @param[in,out] len Size of buffer, will be updated with new length
+ */
+void mobi_remove_zeros(unsigned char *buffer, size_t *len) {
+    size_t length = *len;
+    unsigned char *end = buffer + length;
+    unsigned char *buf = memchr(buffer, 0, length);
+    if (buf == NULL) {
+        return;
+    }
+    buf++;
+    size_t distance = 1;
+    while (buf < end) {
+        if (*buf) {
+            *(buf - distance) = *buf;
+        } else {
+            distance++;
+        }
+        buf++;
+    }
+    *len -= distance;
+}
+
+/**
  @brief Loader will parse KF7 part of hybrid file
  
  @param[in,out] m MOBIData structure
@@ -2191,6 +2889,25 @@ MOBI_RET mobi_swap_mobidata(MOBIData *m) {
 }
 
 /**
+ @brief Store PID for encryption in MOBIData stucture.
+ PID will be calculated from device serial number.
+ 
+ @param[in,out] m MOBIData structure with raw data and metadata
+ @param[in] serial Device serial number
+ @return MOBI_RET status code (on success MOBI_SUCCESS)
+ */
+MOBI_RET mobi_drm_setkey_serial(MOBIData *m, const char *serial) {
+#ifdef USE_ENCRYPTION
+    return mobi_drm_setkey_serial_internal(m, serial);
+#else
+    UNUSED(m);
+    UNUSED(serial);
+    debug_print("Libmobi compiled without encryption support%s", "\n");
+    return MOBI_DRM_UNSUPPORTED;
+#endif
+}
+
+/**
  @brief Store PID for encryption in MOBIData stucture
  
  @param[in,out] m MOBIData structure with raw data and metadata
@@ -2222,4 +2939,32 @@ MOBI_RET mobi_drm_delkey(MOBIData *m) {
     debug_print("Libmobi compiled without encryption support%s", "\n");
     return MOBI_DRM_UNSUPPORTED;
 #endif
+}
+
+/**
+ @brief Convert char buffer to 32-bit unsigned integer big endian
+ 
+ @param[in] buf Input buffer
+ @return Converted value
+ */
+uint32_t mobi_get32be(const unsigned char buf[4]) {
+    uint32_t val = (uint32_t) buf[0] << 24;
+    val |= (uint32_t) buf[1] << 16;
+    val |= (uint32_t) buf[2] << 8;
+    val |= (uint32_t) buf[3];
+    return val;
+}
+
+/**
+ @brief Convert char buffer to 32-bit unsigned integer little endian
+ 
+ @param[in] buf Input buffer
+ @return Converted value
+ */
+uint32_t mobi_get32le(const unsigned char buf[4]) {
+    uint32_t val = (uint32_t) buf[0];
+    val |= (uint32_t) buf[1] << 8;
+    val |= (uint32_t) buf[2] << 16;
+    val |= (uint32_t) buf[3] << 24;
+    return val;
 }

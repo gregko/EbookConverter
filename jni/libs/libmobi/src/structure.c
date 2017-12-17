@@ -11,9 +11,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include "structure.h"
 #include "debug.h"
+#if defined(__BIONIC__) && !defined(SIZE_MAX)
+#include <limits.h> /* for SIZE_MAX */
+#endif
 
 /**
  @brief Initializer for MOBIArray structure
@@ -37,7 +39,8 @@ MOBIArray * array_init(const size_t len) {
         debug_print("%s", "Array data allocation failed\n");
         return NULL;
     }
-    arr->maxsize = arr->step = len;
+    arr->maxsize = len;
+    arr->step = len ? len : 1;
     arr->size = 0;
     return arr;
 }
@@ -336,6 +339,10 @@ MOBI_RET mobi_btree_insert(MOBIBtree **node, char *key, char *value) {
         (*node)->key = key;
         (*node)->value_count = 1;
         (*node)->array = malloc(sizeof(*(*node)->array));
+        if ((*node)->array == NULL) {
+            free(*node);
+            return MOBI_MALLOC_FAILED;
+        }
         (*node)->array[0] = value;
         (*node)->left = NULL;
         (*node)->right = NULL;

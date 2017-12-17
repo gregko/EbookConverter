@@ -24,21 +24,15 @@
  @return MOBIBuffer on success, NULL otherwise
  */
 MOBIBuffer * buffer_init(const size_t len) {
-    MOBIBuffer *buf = NULL;
-    buf = malloc(sizeof(MOBIBuffer));
-	if (buf == NULL) {
-        debug_print("%s", "Buffer allocation failed\n");
+    unsigned char *data = malloc(len);
+    if (data == NULL) {
+        debug_print("%s", "Buffer data allocation failed\n");
         return NULL;
     }
-    buf->data = malloc(len);
-	if (buf->data == NULL) {
-		free(buf);
-        debug_print("%s", "Buffer data allocation failed\n");
-		return NULL;
+    MOBIBuffer *buf = buffer_init_null(data, len);
+    if (buf == NULL) {
+        free(data);
 	}
-	buf->offset = 0;
-	buf->maxlen = len;
-    buf->error = MOBI_SUCCESS;
 	return buf;
 }
 
@@ -46,19 +40,20 @@ MOBIBuffer * buffer_init(const size_t len) {
  @brief Initializer for MOBIBuffer structure
  
  It allocates memory for structure but, unlike buffer_init(), it does not allocate memory for data.
- Memory should be freed with buffer_free_null().
+ Instead it works on external data.
+ Memory should be freed with buffer_free_null() (buf->data will not be deallocated).
  
+ @param[in,out] data Set data as buffer data
  @param[in] len Size of data held by the buffer
  @return MOBIBuffer on success, NULL otherwise
  */
-MOBIBuffer * buffer_init_null(const size_t len) {
-    MOBIBuffer *buf = NULL;
-    buf = malloc(sizeof(MOBIBuffer));
+MOBIBuffer * buffer_init_null(unsigned char *data, const size_t len) {
+    MOBIBuffer *buf = malloc(sizeof(MOBIBuffer));
 	if (buf == NULL) {
         debug_print("%s", "Buffer allocation failed\n");
         return NULL;
     }
-    buf->data = NULL;
+    buf->data = data;
 	buf->offset = 0;
 	buf->maxlen = len;
     buf->error = MOBI_SUCCESS;
@@ -135,8 +130,8 @@ void buffer_add32(MOBIBuffer *buf, const uint32_t data) {
         return;
     }
     unsigned char *buftr = buf->data + buf->offset;
-    *buftr++ = (uint8_t)((uint32_t)(data & 0xff000000U) >> 16);
-    *buftr++ = (uint8_t)((uint32_t)(data & 0xff0000U) >> 12);
+    *buftr++ = (uint8_t)((uint32_t)(data & 0xff000000U) >> 24);
+    *buftr++ = (uint8_t)((uint32_t)(data & 0xff0000U) >> 16);
     *buftr++ = (uint8_t)((uint32_t)(data & 0xff00U) >> 8);
     *buftr = (uint8_t)((uint32_t)(data & 0xffU));
     buf->offset += 4;
@@ -160,7 +155,7 @@ void buffer_addraw(MOBIBuffer *buf, const unsigned char* data, const size_t len)
 }
 
 /**
- @brief Adds zero padded string to MOBIBuffer
+ @brief Adds string to MOBIBuffer without null terminator
  
  @param[in,out] buf MOBIBuffer structure to be filled with data
  @param[in] str Pointer to string
@@ -542,6 +537,25 @@ bool buffer_match_magic(MOBIBuffer *buf, const char *magic) {
         return true;
     }
     return false;
+}
+
+/**
+ @brief Check if buffer contains magic signature at given offset
+ 
+ @param[in] buf MOBIBuffer buffer containing data
+ @param[in] magic Magic signature
+ @param[in] offset Offset
+ @return boolean true on match, false otherwise
+ */
+bool buffer_match_magic_offset(MOBIBuffer *buf, const char *magic, const size_t offset) {
+    bool match = false;
+    if (offset <= buf->maxlen) {
+        const size_t save_offset = buf->offset;
+        buf->offset = offset;
+        match = buffer_match_magic(buf, magic);
+        buf->offset = save_offset;
+    }
+    return match;
 }
 
 /**

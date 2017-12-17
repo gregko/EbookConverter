@@ -53,6 +53,12 @@
     <ClCompile Include="src\save_epub.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\meta.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sha1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\buffer.h">
@@ -101,6 +107,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\save_epub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\meta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sha1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

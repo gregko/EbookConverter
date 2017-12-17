@@ -1,4 +1,5 @@
 /** @file xmlwriter.c
+ *  @brief Implements a simplified subset of libxml2 functions used in libmobi.
  *
  * Copyright (c) 2016 Bartek Fabiszewski
  * http://www.fabiszewski.net
@@ -6,9 +7,6 @@
  * This file is part of libmobi.
  * Licensed under LGPL, either version 3, or any later.
  * See <http://www.gnu.org/licenses/>
- *
- *
- * Implements a simplified subset of libxml2 functions used in libmobi.
  */
 
 #define _GNU_SOURCE 1
@@ -168,7 +166,7 @@ static MOBI_RET mobi_xml_buffer_addstring(xmlTextWriterPtr writer, const char *s
  @return MOBI_RET status code (on success MOBI_SUCCESS)
  */
 static MOBI_RET mobi_xml_buffer_addchar(xmlTextWriterPtr writer, const unsigned char c) {
-    if (writer == NULL || writer->xmlbuf->mobibuffer == NULL || writer->xmlbuf->mobibuffer == NULL) {
+    if (writer == NULL || writer->xmlbuf == NULL || writer->xmlbuf->mobibuffer == NULL) {
         return MOBI_INIT_FAILED;
     }
     MOBIBuffer *buf = writer->xmlbuf->mobibuffer;
@@ -413,12 +411,6 @@ xmlTextWriterPtr xmlNewTextWriterMemory(xmlBufferPtr xmlbuf, int compression) {
         return NULL;
     }
     writer->xmlbuf = xmlbuf;
-    MOBIArray *states = array_init(MOBI_XML_STATESSIZE);
-    if (states == NULL) {
-        debug_print("%s", "XML states array allocation failed\n");
-        free(writer);
-        return NULL;
-    }
     writer->states = NULL;
     writer->nsname = NULL;
     writer->nsvalue = NULL;

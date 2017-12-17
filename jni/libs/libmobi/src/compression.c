@@ -31,21 +31,17 @@
  */
 MOBI_RET mobi_decompress_lz77(unsigned char *out, const unsigned char *in, size_t *len_out, const size_t len_in) {
     MOBI_RET ret = MOBI_SUCCESS;
-    MOBIBuffer *buf_in = buffer_init_null(len_in);
+    MOBIBuffer *buf_in = buffer_init_null((unsigned char *) in, len_in);
     if (buf_in == NULL) {
         debug_print("%s\n", "Memory allocation failed");
         return MOBI_MALLOC_FAILED;
     }
-    MOBIBuffer *buf_out = buffer_init_null(*len_out);
+    MOBIBuffer *buf_out = buffer_init_null(out, *len_out);
     if (buf_out == NULL) {
         buffer_free_null(buf_in);
         debug_print("%s\n", "Memory allocation failed");
         return MOBI_MALLOC_FAILED;
     }
-    /* FIXME: is it ok to cast const to non-const here */
-    /* or is there a better way? */
-    buf_in->data = (unsigned char *) in;
-    buf_out->data = out;
     while (ret == MOBI_SUCCESS && buf_in->offset < buf_in->maxlen) {
         uint8_t byte = buffer_get8(buf_in);
         /* byte pair: space + char */
@@ -73,7 +69,7 @@ MOBI_RET mobi_decompress_lz77(unsigned char *out, const unsigned char *in, size_
         }
         /* char '\0', not modified */
         else {
-            buffer_copy8(buf_out, buf_in);
+            buffer_add8(buf_out, byte);
         }
         if (buf_in->error || buf_out->error) {
             ret = MOBI_BUFFER_END;
@@ -157,7 +153,7 @@ static MOBI_RET mobi_decompress_huffman_internal(MOBIBuffer *buf_out, MOBIBuffer
         /* get index for symbol offset */
         uint32_t index = (uint32_t) (maxcode - code) >> (32 - code_length);
         /* check which part of cdic to use */
-        uint8_t cdic_index = (uint8_t) ((uint32_t)index >> huffcdic->code_length);
+        uint16_t cdic_index = (uint16_t) ((uint32_t)index >> huffcdic->code_length);
         if (index >= huffcdic->index_count) {
             debug_print("Wrong symbol offsets index: %u\n", index);
             return MOBI_DATA_CORRUPT;
@@ -203,21 +199,17 @@ static MOBI_RET mobi_decompress_huffman_internal(MOBIBuffer *buf_out, MOBIBuffer
  @return MOBI_RET status code (on success MOBI_SUCCESS)
  */
 MOBI_RET mobi_decompress_huffman(unsigned char *out, const unsigned char *in, size_t *len_out, size_t len_in, const MOBIHuffCdic *huffcdic) {
-    MOBIBuffer *buf_in = buffer_init_null(len_in);
+    MOBIBuffer *buf_in = buffer_init_null((unsigned char *) in, len_in);
     if (buf_in == NULL) {
         debug_print("%s\n", "Memory allocation failed");
         return MOBI_MALLOC_FAILED;
     }
-    MOBIBuffer *buf_out = buffer_init_null(*len_out);
+    MOBIBuffer *buf_out = buffer_init_null(out, *len_out);
     if (buf_out == NULL) {
         buffer_free_null(buf_in);
         debug_print("%s\n", "Memory allocation failed");
         return MOBI_MALLOC_FAILED;
     }
-    /* FIXME: is it ok to cast const to non-const here */
-    /* or is there a better way? */
-    buf_in->data = (unsigned char *) in;
-    buf_out->data = out;
     MOBI_RET ret = mobi_decompress_huffman_internal(buf_out, buf_in, huffcdic, 0);
     *len_out = buf_out->offset;
     buffer_free_null(buf_out);

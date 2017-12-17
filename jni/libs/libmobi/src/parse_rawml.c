@@ -17,14 +17,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <limits.h>
 #include "parse_rawml.h"
 #include "util.h"
 #include "opf.h"
 #include "structure.h"
 #include "index.h"
 #include "debug.h"
-
+#if defined(__BIONIC__) && !defined(SIZE_MAX)
+#include <limits.h> /* for SIZE_MAX */
+#endif
 
 /**
  @brief Convert kindle:pos:fid:x:off:y to offset in rawml raw text file
@@ -448,7 +449,7 @@ MOBI_RET mobi_get_offset_by_posoff(uint32_t *file_number, size_t *offset, const 
  */
 MOBI_RET mobi_get_aid_by_offset(char *aid, const MOBIPart *html, const size_t offset) {
     if (!aid || !html) {
-        debug_print("Parameter error (aid (%p), html (%p)\n", aid, (void *) html);
+        debug_print("Parameter error (aid (%p), html (%p)\n", (void *) aid, (void *) html);
         return MOBI_PARAM_ERR;
     }
     if (offset > html->size) {
@@ -476,7 +477,7 @@ MOBI_RET mobi_get_aid_by_offset(char *aid, const MOBIPart *html, const size_t of
  */
 MOBI_RET mobi_get_id_by_offset(char *id, const MOBIPart *html, const size_t offset) {
     if (!id || !html) {
-        debug_print("Parameter error (id (%p), html (%p)\n", id, (void *) html);
+        debug_print("Parameter error (id (%p), html (%p)\n", (void *) id, (void *) html);
         return MOBI_PARAM_ERR;
     }
     if (offset > html->size) {
@@ -588,7 +589,7 @@ MOBI_RET mobi_reconstruct_resources(const MOBIData *m, MOBIRawml *rawml) {
         if (parts_count > 0) {
             curr_part->next = calloc(1, sizeof(MOBIPart));
             if (curr_part->next == NULL) {
-                debug_print("%s", "Memory allocation for flow part failed\n");
+                debug_print("%s\n", "Memory allocation for flow part failed");
                 return MOBI_MALLOC_FAILED;
             }
             curr_part = curr_part->next;
@@ -601,19 +602,19 @@ MOBI_RET mobi_reconstruct_resources(const MOBIData *m, MOBIRawml *rawml) {
         if (filetype == T_FONT) {
             ret = mobi_add_font_resource(curr_part);
             if (ret != MOBI_SUCCESS) {
-                printf("Decoding font resource failed\n");
+                debug_print("%s\n", "Decoding font resource failed");
                 return ret;
             }
         } else if (filetype == T_AUDIO) {
             ret = mobi_add_audio_resource(curr_part);
             if (ret != MOBI_SUCCESS) {
-                printf("Decoding audio resource failed\n");
+                debug_print("%s\n", "Decoding audio resource failed");
                 return ret;
             }
         } else if (filetype == T_VIDEO) {
             ret = mobi_add_video_resource(curr_part);
             if (ret != MOBI_SUCCESS) {
-                printf("Decoding video resource failed\n");
+                debug_print("%s\n", "Decoding video resource failed");
                 return ret;
             }
         } else {
@@ -644,12 +645,11 @@ MOBI_RET mobi_reconstruct_resources(const MOBIData *m, MOBIRawml *rawml) {
  */
 MOBI_RET mobi_process_replica(unsigned char *pdf, const char *text, size_t *length) {
     MOBI_RET ret = MOBI_SUCCESS;
-    MOBIBuffer *buf = buffer_init_null(*length);
+    MOBIBuffer *buf = buffer_init_null((unsigned char*) text, *length);
     if (buf == NULL) {
         debug_print("%s\n", "Memory allocation failed");
         return MOBI_MALLOC_FAILED;
     }
-    buf->data = (unsigned char*) text;
     buffer_setpos(buf, 12);
     size_t pdf_offset = buffer_get32(buf); /* offset 12 */
     size_t pdf_length = buffer_get32(buf); /* 16 */
@@ -732,6 +732,10 @@ MOBI_RET mobi_reconstruct_flow(MOBIRawml *rawml, const char *text, const size_t 
             debug_print("%s", "Print Replica book\n");
             /* print replica */
             unsigned char *pdf = malloc(length);
+            if (pdf == NULL) {
+                debug_print("%s", "Memory allocation for flow part failed\n");
+                return MOBI_MALLOC_FAILED;
+            }
             section_length = length;
             section_type = T_PDF;
             const MOBI_RET ret = mobi_process_replica(pdf, text, &section_length);
@@ -779,8 +783,11 @@ MOBI_RET mobi_reconstruct_parts(MOBIRawml *rawml) {
         return MOBI_INIT_FAILED;
     }
     /* take first part, xhtml */
-    MOBIBuffer *buf = buffer_init_null(rawml->flow->size);
-    buf->data = rawml->flow->data;
+    MOBIBuffer *buf = buffer_init_null(rawml->flow->data, rawml->flow->size);
+    if (buf == NULL) {
+        debug_print("%s\n", "Memory allocation failed");
+        return MOBI_MALLOC_FAILED;
+    }
     rawml->markup = calloc(1, sizeof(MOBIPart));
     if (rawml->markup == NULL) {
         debug_print("%s", "Memory allocation for markup part failed\n");
@@ -1145,7 +1152,10 @@ MOBI_RET mobi_embed_to_link(char *link, const MOBIRawml *rawml, const char *valu
     MOBIPart *resource = mobi_get_resource_by_uid(rawml, part_id);
     if (resource == NULL) {
         debug_print("Link corrupt: kindle:embed:%s\n", value);
-        return MOBI_DATA_CORRUPT;
+        //return MOBI_DATA_CORRUPT;
+		// GKochaniak skipping resouce that does not exist...
+		*link = '\0';
+		return MOBI_SUCCESS;
     }
     MOBIFileMeta meta = mobi_get_filemeta_by_type(resource->type);
     char *extension = meta.extension;
@@ -1287,9 +1297,14 @@ MOBI_RET mobi_reconstruct_links_kf8(const MOBIRawml *rawml) {
         MOBIPart *part = parts[i];
         while (part) {
             if (partdata && part->uid == partdata->part_uid && i == partdata->part_group) {
-                unsigned char *new_data = malloc(partdata->size);
-                unsigned char *data_out = new_data;
                 MOBIFragment *fragdata = partdata->list;
+                unsigned char *new_data = malloc(partdata->size);
+                if (new_data == NULL) {
+                    mobi_list_del_all(fragdata);
+                    debug_print("%s\n", "Memory allocation failed");
+                    return MOBI_MALLOC_FAILED;
+                }
+                unsigned char *data_out = new_data;
                 while (fragdata) {
                     memcpy(data_out, fragdata->fragment, fragdata->size);
                     data_out += fragdata->size;
@@ -1531,11 +1546,22 @@ MOBI_RET mobi_reconstruct_orth(const MOBIRawml *rawml, MOBIFragment *first, size
             entry_length += strlen(infl_tag);
             
             entry_text = malloc(entry_length + 1);
-            sprintf(entry_text, start_tag, label, infl_tag);
+            if (entry_text == NULL) {
+                debug_print("%s\n", "Memory allocation failed");
+                mobi_trie_free(infl_trie);
+                free(infl_tag);
+                return MOBI_MALLOC_FAILED;
+            }
+            snprintf(entry_text, entry_length + 1, start_tag, label, infl_tag);
             free(infl_tag);
         } else {
             entry_text = malloc(entry_length + 1);
-            sprintf(entry_text, start_tag, label, "");
+            if (entry_text == NULL) {
+                debug_print("%s\n", "Memory allocation failed");
+                mobi_trie_free(infl_trie);
+                return MOBI_MALLOC_FAILED;
+            }
+            snprintf(entry_text, entry_length + 1, start_tag, label, "");
         }
         
         if (entry_startpos < prev_startpos) {
@@ -1735,6 +1761,11 @@ MOBI_RET mobi_reconstruct_links_kf7(const MOBIRawml *rawml) {
         /* save */
         debug_print("Inserting links%s", "\n");
         unsigned char *new_data = malloc(new_size);
+        if (new_data == NULL) {
+            mobi_list_del_all(first);
+            debug_print("%s\n", "Memory allocation failed");
+            return MOBI_MALLOC_FAILED;
+        }
         unsigned char *data_out = new_data;
         MOBIFragment *fragdata = first;
         while (fragdata) {
@@ -1957,7 +1988,7 @@ MOBI_RET mobi_parse_rawml_opt(MOBIRawml *rawml, const MOBIData *m, bool parse_to
     /* Get maximal size of text data */
     const size_t maxlen = mobi_get_text_maxsize(m);
     if (maxlen == MOBI_NOTSET) {
-        debug_print("%s", "Insane text lenght\n");
+        debug_print("%s", "Insane text length\n");
         return MOBI_DATA_CORRUPT;
     }
     char *text = malloc(maxlen + 1);

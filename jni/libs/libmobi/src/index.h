@@ -55,10 +55,9 @@
 #define INDX_INFLTAG_SIZEMAX 25000 /**< Max size of inflections tags per entry */
 #define INDX_INFLBUF_SIZEMAX 500 /**< Max size of index label */
 #define INDX_INFLSTRINGS_MAX 500 /**< Max number of inflected strings */
-#define ORDT_RECORD_MAXCNT 1024 /* max entries count */
-#define LIGT_RECORD_MAXCNT 5 /* max entries count */
+#define ORDT_RECORD_MAXCNT 256 /* max entries count in old ordt */
 #define CNCX_RECORD_MAXCNT 0xf /* max entries count */
-#define INDX_RECORD_MAXCNT 5000 /* max index entries per record */
+#define INDX_RECORD_MAXCNT 6000 /* max index entries per record */
 #define INDX_TOTAL_MAXCNT ((size_t) INDX_RECORD_MAXCNT * 0xffff) /* max total index entries */
 #define INDX_NAME_SIZEMAX 0xff
 
@@ -120,6 +119,7 @@ MOBI_RET mobi_get_indxentry_tagvalue(uint32_t *tagvalue, const MOBIIndexEntry *e
 size_t mobi_get_indxentry_tagarray(uint32_t **tagarr, const MOBIIndexEntry *entry, const size_t tagid);
 bool mobi_indx_has_tag(const MOBIIndx *indx, const size_t tagid);
 char * mobi_get_cncx_string(const MOBIPdbRecord *cncx_record, const uint32_t cncx_offset);
+char * mobi_get_cncx_string_utf8(const MOBIPdbRecord *cncx_record, const uint32_t cncx_offset, MOBIEncoding cncx_encoding);
 char * mobi_get_cncx_string_flat(const MOBIPdbRecord *cncx_record, const uint32_t cncx_offset, const size_t length);
 MOBI_RET mobi_decode_infl(unsigned char *decoded, int *decoded_size, const unsigned char *rule);
 MOBI_RET mobi_decode_infl_old(const MOBIIndx *indx);

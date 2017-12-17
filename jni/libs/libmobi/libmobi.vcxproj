@@ -152,6 +152,7 @@
     <ClCompile Include="src\encryption.c" />
     <ClCompile Include="src\index.c" />
     <ClCompile Include="src\memory.c" />
+    <ClCompile Include="src\meta.c" />
     <ClCompile Include="src\miniz.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -162,6 +163,7 @@
     <ClCompile Include="src\parse_rawml.c" />
     <ClCompile Include="src\read.c" />
     <ClCompile Include="src\save_epub.c" />
+    <ClCompile Include="src\sha1.c" />
     <ClCompile Include="src\structure.c" />
     <ClCompile Include="src\util.c" />
     <ClCompile Include="src\write.c" />
@@ -174,12 +176,14 @@
     <ClInclude Include="src\encryption.h" />
     <ClInclude Include="src\index.h" />
     <ClInclude Include="src\memory.h" />
+    <ClInclude Include="src\meta.h" />
     <ClInclude Include="src\miniz.h" />
     <ClInclude Include="src\mobi.h" />
     <ClInclude Include="src\opf.h" />
     <ClInclude Include="src\parse_rawml.h" />
     <ClInclude Include="src\read.h" />
     <ClInclude Include="src\save_epub.h" />
+    <ClInclude Include="src\sha1.h" />
     <ClInclude Include="src\structure.h" />
     <ClInclude Include="src\util.h" />
     <ClInclude Include="src\write.h" />
