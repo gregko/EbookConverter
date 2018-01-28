@@ -1299,18 +1299,22 @@ void ConverterPass2::author()
 {
     s_->BeginNotEmptyElement("author");
 
-    String author;
-    if(s_->IsNextElement("first-name")) {
-        if(s_->IsNextElement("middle-name"))
-            author = Concat(author, " ", s_->SimpleTextElement("middle-name"));
-
-		if (s_->IsNextElement("last-name"))
-			author = Concat(author, " ", s_->SimpleTextElement("last-name"));
-    }
-    else if(s_->IsNextElement("nickname"))
-        author = s_->SimpleTextElement("nickname");
-    else
-        s_->Error("<first-name> or <nickname> expected");
+    String author, fn, mn, ln;
+	for (int i = 0; i < 4; i++) {
+		if (s_->IsNextElement("first-name"))
+			fn = s_->SimpleTextElement("first-name");
+		else if (s_->IsNextElement("middle-name"))
+			mn = s_->SimpleTextElement("middle-name");
+		else if (s_->IsNextElement("last-name"))
+			ln = s_->SimpleTextElement("last-name");
+		else if (s_->IsNextElement("nickname"))
+			author = s_->SimpleTextElement("nickname");
+	}
+	if (author.empty()) {
+		author = Concat(author, " ", fn);
+		author = Concat(author, " ", mn);
+		author = Concat(author, " ", ln);
+	}
 
     authors_.push_back(author);
     s_->SkipRestOfElementContent();
