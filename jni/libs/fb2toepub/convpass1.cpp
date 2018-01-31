@@ -669,20 +669,22 @@ void ConverterPass1::section(int parent, const char* tag)
         annotation();
     //</annotation>
 
-    if(s_->IsNextElement("section"))
-        do
-        {
-            //<section>
-            section(idx);
-            //</section>
-        }
-        while(s_->IsNextElement("section"));
-    else
+    //if(s_->IsNextElement("section"))
+    //    do
+    //    {
+    //        //<section>
+    //        section(idx);
+    //        //</section>
+    //    }
+    //    while(s_->IsNextElement("section"));
+    //else
         for(LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
         {
             //<p>, <image>, <poem>, <subtitle>, <cite>, <empty-line>, <table>
-            if(!t.s_.compare("p"))
-                p();
+			if (!t.s_.compare("p"))
+				p();
+			else if (!t.s_.compare("section"))
+				section(idx);
             else if(!t.s_.compare("image"))
             {
                 SwitchUnitIfSizeAbove(UNIT_SIZE1, parent);
