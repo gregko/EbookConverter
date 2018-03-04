@@ -65,6 +65,7 @@ typedef unsigned int flex_uint32_t;
 #include <errno.h>
 #include <cstdlib>
 #include <cstring>
+#include <time.h>
 /* end standard C++ headers. */
 
 /* Limits of integral types. */
@@ -1035,6 +1036,8 @@ YY_DECL
 		yy_load_buffer_state(  );
 		}
 
+	clock_t tim0 = clock();
+
 	while ( 1 )		/* loops until end-of-file is reached */
 		{
 		yy_cp = (yy_c_buf_p);
@@ -1048,7 +1051,12 @@ YY_DECL
 		yy_bp = yy_cp;
 
 		yy_current_state = (yy_start);
-yy_match:
+	yy_match:
+		clock_t tim1 = clock();
+		if ((tim1 - tim0) >= 2*CLOCKS_PER_SEC) { // 2 seconds
+			Error("Infinite loop, damaged FB2 file?\n");
+			break;
+		}
 		do
 			{
 			register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)];
