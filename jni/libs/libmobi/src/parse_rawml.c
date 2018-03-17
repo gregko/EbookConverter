@@ -2019,7 +2019,8 @@ MOBI_RET mobi_parse_rawml_opt(MOBIRawml *rawml, const MOBIData *m, bool parse_to
     }
     ret = mobi_reconstruct_resources(m, rawml);
     if (ret != MOBI_SUCCESS) {
-        return ret;
+		debug_print("MOBI_DATA_CORRUPT error in mobi_reconstruct_resources(), trying to continue...\n")
+        //return ret;
     }
     const size_t offset = mobi_get_kf8offset(m);
     /* skeleton index */
