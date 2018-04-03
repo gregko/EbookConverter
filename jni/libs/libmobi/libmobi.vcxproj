@@ -87,7 +87,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>USE_XMLWRITER;USE_LIBXML2;USE_ENCRYPTION;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_XMLWRITER;USE_LIBXML2;USE_ENCRYPTION;MOBI_DEBUG;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>..\libxml2\include;..\libiconv\include;..\libiconv\libcharset\include;..\zlib;..\unzip101e;..\tidylib\include;..\tidylib\include</AdditionalIncludeDirectories>
     </ClCompile>
