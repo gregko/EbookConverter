@@ -151,7 +151,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/fb2toepub
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/libs/fb2toepub/tiniconv
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/unzip101e/
 LOCAL_CFLAGS += -Wno-write-strings
-LOCAL_CPPFLAGS += -fexceptions
+LOCAL_CPPFLAGS += -fexceptions -Dunix
 
 LOCAL_SRC_FILES += libs/fb2toepub/tiniconv/tiniconv.c
 LOCAL_SRC_FILES += libs/fb2toepub/tiniconv/tiniconv_desc.c
