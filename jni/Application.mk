@@ -2,10 +2,9 @@
 NDK_TOOLCHAIN_VERSION := clang
 APP_PLATFORM := android-16
 APP_CFLAGS += -Wno-write-strings -Wno-logical-op-parentheses -Wno-unsequenced -Wno-parentheses -Wno-switch -Wno-#warnings -Wno-invalid-source-encoding
-APP_CPPFLAGS += -frtti -fexceptions -Wno-logical-op-parentheses -Wno-unsequenced -Wno-parentheses -Wno-switch -Wno-#warnings -Wno-invalid-source-encoding
+APP_CPPFLAGS += -fno-rtti -fexceptions -Wno-logical-op-parentheses -Wno-unsequenced -Wno-parentheses -Wno-switch -Wno-#warnings -Wno-invalid-source-encoding
 APP_ARM_MODE := thumb
 APP_STL := c++_shared
-#APP_CPPFLAGS += -fexceptions
 ifeq ($(NDK_DEBUG),1)
     APP_OPTIM := debug
 	APP_CFLAGS += -D_DEBUG
