@@ -73,7 +73,7 @@ static const unsigned char cp1252_to_utf8[32][3] = {
  */
 const char * mobi_version(void) {
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "0.3"
+#define PACKAGE_VERSION "0.4"
 #endif
     return PACKAGE_VERSION;
 }
@@ -1717,6 +1717,12 @@ static MOBI_RET mobi_decompress_content(const MOBIData *m, char *text, FILE *fil
                 }
             }
             const size_t decrypt_size = curr->size - extra_size;
+            if (decrypt_size > decompressed_size) {
+                debug_print("Record too large: %zu\n", decrypt_size);
+                mobi_free_huffcdic(huffcdic);
+                free(decompressed);
+                return MOBI_DATA_CORRUPT;
+            }
             if (decrypt_size) {
 				ret = mobi_drm_decrypt_buffer(decompressed, curr->data, decrypt_size, m);
 				if (ret != MOBI_SUCCESS) {
@@ -2394,6 +2400,12 @@ MOBI_RET mobi_decode_font_resource(unsigned char **decoded_font, size_t *decoded
             return MOBI_DATA_CORRUPT;
         }
     } else {
+        if (*decoded_size < encoded_size) {
+            buffer_free(buf);
+            free(*decoded_font);
+            debug_print("Font size in record (%lu) larger then declared (%zu)\n", encoded_size, *decoded_size);
+            return MOBI_DATA_CORRUPT;
+        }
         memcpy(*decoded_font, encoded_font, encoded_size);
     }
 
@@ -2755,8 +2767,8 @@ size_t mobi_get_kf8boundary_seqnumber(const MOBIData *m) {
         uint32_t rec_number = mobi_decode_exthvalue(exth_tag->data, exth_tag->size);
         rec_number--;
         const MOBIPdbRecord *record = mobi_get_record_by_seqnumber(m, rec_number);
-        if (record) {
-            if(memcmp(record->data, "BOUNDARY", 8) == 0) {
+        if (record && record->size >= sizeof(BOUNDARY_MAGIC) - 1) {
+            if (memcmp(record->data, BOUNDARY_MAGIC, sizeof(BOUNDARY_MAGIC) - 1) == 0) {
                 return rec_number;
             }
         }

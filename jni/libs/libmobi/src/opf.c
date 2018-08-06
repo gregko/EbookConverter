@@ -293,7 +293,7 @@ MOBI_RET mobi_write_ncx_level(xmlTextWriterPtr writer, const NCX *ncx, const siz
         if (xml_ret < 0) { return MOBI_XML_ERR; }
         debug_print("%s - %s\n", ncx[i].text, ncx[i].target);
         if (ncx[i].first_child != MOBI_NOTSET && ncx[i].last_child != MOBI_NOTSET) {
-            MOBI_RET ret = mobi_write_ncx_level(writer, ncx, level + 1, ncx[i].first_child, ncx[i].last_child, seq);
+            MOBI_RET ret = mobi_write_ncx_level(writer, ncx, level + 1, ncx[i].first_child, ncx[i].last_child+1, seq); // GKochaniak changed to .last_child+1
             if (ret != MOBI_SUCCESS) {
                 return ret;
             }
@@ -1376,7 +1376,7 @@ MOBI_RET mobi_xml_write_spine(xmlTextWriterPtr writer, const MOBIRawml *rawml) {
     }
     if (curr) {
         //sprintf(ncxid, "resource%05zu", curr->uid);
-		sprintf(ncxid, "toc");
+		sprintf(ncxid, "toc"); // GKochaniak, changed
     } else {
         return MOBI_DATA_CORRUPT;
     }
@@ -1460,11 +1460,11 @@ MOBI_RET mobi_xml_write_manifest(xmlTextWriterPtr writer, const MOBIRawml *rawml
     }
     if (rawml->resources != NULL) {
         MOBIPart *curr = rawml->resources;
-		bool hasToc = false;
-		bool hasContent = false;
+		bool hasToc = false; // GKochaniak
+		bool hasContent = false; // GKochaniak
         while (curr != NULL) {
             MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
-			if (file_meta.type == T_NCX && !hasToc) {
+			if (file_meta.type == T_NCX && !hasToc) { // GKochaniak + 11 lines below
 				sprintf(href, "toc.%s", file_meta.extension);
 				sprintf(id, "toc");
 				hasToc = true;
