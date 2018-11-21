@@ -77,6 +77,12 @@
     <Text Include="AndroidStripError.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\atVoice\app\Native\cld3Lib\cld3Lib.vcxproj">
+      <Project>{97641aef-02d1-48ec-8fa9-aa4fb7b9710f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\atVoice\app\Native\protobuf-lite\protobuf-lite.vcxproj">
+      <Project>{2d9f3b7e-d404-4d9d-88f1-14877d484ded}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\atVoice\Native\charsetdetectLib\charsetdetectLib.vcxproj">
       <Project>{1c6d283a-bd9a-47cc-889d-0cb314de001d}</Project>
     </ProjectReference>
