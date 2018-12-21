@@ -1328,6 +1328,32 @@ void ConverterPass2::binary()
 
     // store binary attributes
     Binary b(attrmap["id"], attrmap["content-type"]);
+	// GKochaniak Fix: if duplicate name happens, like in Igorevich_Ne_etot_Mir_SI.660672.fb2
+	String fname, fext;
+	int nDot = b.file_.find_last_of('.');
+	if (nDot > -1) {
+		fname = b.file_.substr(0, nDot);
+		fext = b.file_.substr(nDot);
+	}
+	else {
+		fname = b.file_;
+		fext = "";
+	}
+	int idx = 1;
+	char buf[16];
+	bool bMod;
+	do {
+		bMod = false;
+		for (int i = 0; i < binaries_.size(); i++) {
+			if ("bin/" + b.file_ == binaries_[i].file_) {
+				sprintf(buf, "%d", idx++);
+				b.file_ = fname + buf + fext;
+				bMod = true;
+				break;
+			}
+		}
+	} while (bMod);
+
     //if(b.file_.empty() || (b.type_ != "image/jpeg" && b.type_ != "image/png"))
     if(b.file_.empty() || b.type_.empty())
         s_->Error("invalid <binary> attributes");
