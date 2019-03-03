@@ -402,8 +402,8 @@ void ConverterPass1::body(Unit::BodyType bodyType)
 			title(NULL, true);
 		else if (!t.s_.compare("epigraph"))
 			epigraph();
-		else if (!t.s_.compare("section"))
-			section(-1);
+		else if (!t.s_.compare("section") || !t.s_.compare("p"))
+			section(-1, t.s_.c_str());
 		else {
 			s_->SkipElement();
 		}
@@ -633,41 +633,44 @@ void ConverterPass1::section(int parent, const char* tag)
     AttrMap attrmap;
 	if (tag == NULL)
 		tag = "section";
-    bool notempty = s_->BeginElement(tag, &attrmap);
+	int idx = 0;
+	if (strcmp(tag, "section") == 0) {
+		bool notempty = s_->BeginElement(tag, &attrmap);
 
-    int idx = units_->size();
-    units_->push_back(Unit(bodyType_, Unit::SECTION, sectionCnt_++, parent));
-    const String *id = AddId(attrmap);
-    if(!notempty)
-        return;
+		idx = units_->size();
+		units_->push_back(Unit(bodyType_, Unit::SECTION, sectionCnt_++, parent));
+		const String *id = AddId(attrmap);
+		if (!notempty)
+			return;
 
-    //<title>
-    if(s_->IsNextElement("title"))
-    {
-        // check if it has anchor
-        if((bodyType_ == Unit::NOTES || bodyType_ == Unit::COMMENTS) && id && !id->empty())
-            units_->back().noteRefId_ = *id;
+		//<title>
+		if (s_->IsNextElement("title"))
+		{
+			// check if it has anchor
+			if ((bodyType_ == Unit::NOTES || bodyType_ == Unit::COMMENTS) && id && !id->empty())
+				units_->back().noteRefId_ = *id;
 
-        String plainText;
-        title(&plainText);
-        units_->back().title_ = plainText;
-    }
-    //</title>
+			String plainText;
+			title(&plainText);
+			units_->back().title_ = plainText;
+		}
+		//</title>
 
-    //<epigraph>
-    while(s_->IsNextElement("epigraph"))
-        epigraph();
-    //</epigraph>
+		//<epigraph>
+		while (s_->IsNextElement("epigraph"))
+			epigraph();
+		//</epigraph>
 
-    //<image>
-    if(s_->IsNextElement("image"))
-        image(false);
-    //</image>
+		//<image>
+		if (s_->IsNextElement("image"))
+			image(false);
+		//</image>
 
-    //<annotation>
-    if(s_->IsNextElement("annotation"))
-        annotation();
-    //</annotation>
+		//<annotation>
+		if (s_->IsNextElement("annotation"))
+			annotation();
+		//</annotation>
+	}
 
     //if(s_->IsNextElement("section"))
     //    do

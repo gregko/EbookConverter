@@ -68,7 +68,11 @@ void LexScanner::SkipRestOfElementContent()
             if (GetToken().type_ != CLOSE)
                 Error("'close' of etag expected");
             return;
-        default:
+		case CHAR:
+			if (t.c_ == '\0')
+				return;
+			// else fall through
+		default:
             Error("unexpected token");
         }
     }
