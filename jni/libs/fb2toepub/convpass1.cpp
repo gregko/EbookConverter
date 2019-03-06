@@ -128,7 +128,7 @@ void ConverterPass1::Scan()
 //-----------------------------------------------------------------------
 void ConverterPass1::SwitchUnitIfSizeAbove(std::size_t size, int parent)
 {
-    if(units_->back().size_ > size)
+    if(units_->size() && units_->back().size_ > size)
         units_->push_back(Unit(bodyType_, Unit::SECTION, sectionCnt_++, parent));
 }
 
@@ -179,7 +179,8 @@ void ConverterPass1::ParseTextAndEndElement(const String &element, String *plain
 
         case LexScanner::DATA:
             s_->GetToken();
-            units_->back().size_ += t.size_;
+			if (units_->size())
+				units_->back().size_ += t.size_;
             if(plainText)
                 *plainText += t.s_;
             continue;
@@ -312,7 +313,8 @@ void ConverterPass1::a(String *plainText)
 
         case LexScanner::DATA:
             s_->GetToken();
-            units_->back().size_ += t.size_;
+			if (units_->size())
+	            units_->back().size_ += t.size_;
             if(plainText)
                 *plainText += t.s_;
             continue;
@@ -633,11 +635,10 @@ void ConverterPass1::section(int parent, const char* tag)
     AttrMap attrmap;
 	if (tag == NULL)
 		tag = "section";
-	int idx = 0;
+	int idx = units_->size();
 	if (strcmp(tag, "section") == 0) {
 		bool notempty = s_->BeginElement(tag, &attrmap);
 
-		idx = units_->size();
 		units_->push_back(Unit(bodyType_, Unit::SECTION, sectionCnt_++, parent));
 		const String *id = AddId(attrmap);
 		if (!notempty)
@@ -670,6 +671,9 @@ void ConverterPass1::section(int parent, const char* tag)
 		if (s_->IsNextElement("annotation"))
 			annotation();
 		//</annotation>
+	}
+	else {
+		units_->push_back(Unit(bodyType_, Unit::SECTION, sectionCnt_++, parent));
 	}
 
     //if(s_->IsNextElement("section"))

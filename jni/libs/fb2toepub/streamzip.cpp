@@ -63,13 +63,30 @@ public:
     String      UIFileName() const {return name_;}
 };
 
+static bool myStriEqual(const char *s1, const char *s2) {
+	while (*s1 && *s2) {
+		if (toupper(*s1++) != toupper(*s2++))
+			return false;
+	}
+	return *s1 == *s2;
+}
+
 //-----------------------------------------------------------------------
 UnzipStm::UnzipStm(const char *name) : uf_(::unzOpen(name)), c_(EOF), name_(name)
 {
     if(!uf_)
         IOError(name_, "unzOpen error");
-    if(UNZ_OK != ::unzOpenCurrentFile(uf_))
-        IOError(name_, "unzOpenCurrentFile error");
+
+	char fnBuf[272];
+	int err = unzGetCurrentFileInfo(uf_, NULL, fnBuf, sizeof(fnBuf), NULL, 0, NULL, 0);
+	while (err == UNZ_OK && !myStriEqual(fnBuf + strlen(fnBuf) - 4, ".fb2")) {
+		err = unzGoToNextFile(uf_);
+		if (err == UNZ_OK)
+			err = unzGetCurrentFileInfo(uf_, NULL, fnBuf, sizeof(fnBuf), NULL, 0, NULL, 0);
+	}
+
+	if(UNZ_OK != ::unzOpenCurrentFile(uf_))
+		IOError(name_, "unzOpenCurrentFile error");
 }
 
 //-----------------------------------------------------------------------
@@ -142,10 +159,10 @@ void UnzipStm::Rewind()
     // reopen
     c_ = EOF;
     ::unzCloseCurrentFile(uf_);
-    ::unzClose(uf_);
-    uf_ = ::unzOpen(name_.c_str());
-    if(!uf_)
-        IOError(name_, "unzOpen error");
+    //::unzClose(uf_);
+    //uf_ = ::unzOpen(name_.c_str());
+    //if(!uf_)
+    //    IOError(name_, "unzOpen error");
     if(UNZ_OK != ::unzOpenCurrentFile(uf_))
         IOError(name_, "unzOpenCurrentFile error");
 }
@@ -155,10 +172,10 @@ Ptr<InStm> CreateUnpackStm(const char *name)
 {
     // check if zip
     Ptr<InStm> stm = CreateInFileStm(name);
-    if (stm->GetChar() == 0x50 &&
-        stm->GetChar() == 0x4B &&
-        stm->GetChar() == 0x03 &&
-        stm->GetChar() == 0x04)
+    if (stm->GetChar() == 0x50 && // P
+        stm->GetChar() == 0x4B && // K
+        stm->GetChar() == 0x03 && // "heart"
+        stm->GetChar() == 0x04)   // "diamond"
     {
         return new UnzipStm(name);
     }

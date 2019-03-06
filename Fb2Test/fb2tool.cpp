@@ -13,7 +13,7 @@ int fb2ToEpub(const char* fnameFb2, const char* cssDir, const char* fnameEpub)
 	int ret;
 	try
 	{
-		// create input stream
+		// create input stream - this just takes the very first file inside ZIP... If it's not .fb2, won't work.
 		Ptr<InStm> pin = CreateInUnicodeStm(CreateUnpackStm(fnameFb2));
 
 		// create output stream

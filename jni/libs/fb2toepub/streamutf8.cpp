@@ -37,7 +37,9 @@ namespace Fb2ToEpub
 static const char* RoughEncoding(InStm *stm)
 {
     // usually it's enough to test the first byte only...
-    switch(stm->GetUChar())
+	int uc = stm->GetUChar();
+	stm->UngetUChar(uc);
+	switch(uc)
     {
     case 0x00:  return "UTF-32BE";
     case 0x0E:  return "SCSU";

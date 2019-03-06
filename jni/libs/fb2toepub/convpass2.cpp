@@ -1933,6 +1933,11 @@ void ConverterPass2::section(const char* tag)
 			annotation();
 		//</annotation>
 	}
+	else {
+		// set section language
+		sectionSize_ = 0;
+		StartUnit(Unit::SECTION, NULL);
+	}
 
     //if(s_->IsNextElement("section"))
     //    do
