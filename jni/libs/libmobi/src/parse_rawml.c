@@ -490,7 +490,9 @@ MOBI_RET mobi_get_id_by_offset(char *id, const MOBIPart *html, const size_t offs
     
     size_t off = mobi_get_attribute_value(id, data, length, "id", true);
     if (off == SIZE_MAX) {
-        id[0] = '\0';
+		off = mobi_get_attribute_value(id, data, length, "name", true); // GKochaniak, added this and next line below
+		if (off == SIZE_MAX)
+	        id[0] = '\0';
         //return MOBI_DATA_CORRUPT;
     }
     return MOBI_SUCCESS;
@@ -543,6 +545,16 @@ MOBI_RET mobi_get_id_by_posoff(uint32_t *file_number, char *id, const MOBIRawml 
     if (html == NULL) {
         return MOBI_DATA_CORRUPT;
     }
+#if defined(_DEBUG) && defined(_WIN32) // GKochaniak, for debugging
+	// write html to temp file
+	char fname[256];
+	sprintf(fname, "C:\\tmp\\html_%02d.html", *file_number);
+	FILE *fpTmp = fopen(fname, "wb");
+	if (fpTmp) {
+		fwrite(html->data, 1, html->size, fpTmp);
+		fclose(fpTmp);
+	}
+#endif
     ret = mobi_get_id_by_offset(id, html, offset);
     if (ret != MOBI_SUCCESS) {
         return MOBI_DATA_CORRUPT;
