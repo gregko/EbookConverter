@@ -169,13 +169,10 @@
       <Project>{98e96c4f-4436-4204-9abf-6734c32d6001}</Project>
     </ProjectReference>
     <ProjectReference Include="..\jni\libs\libmobi\libmobi.vcxproj">
-      <Project>{5c97aa54-337b-4fcc-8f94-822db1fd15c1}</Project>
+      <Project>{4b79c2d0-6d11-45d6-a35c-a01a12a89e6e}</Project>
     </ProjectReference>
     <ProjectReference Include="..\jni\libs\libxml2\libxml2.vcxproj">
       <Project>{f04af527-9694-4e6d-85e6-ffb22a8422e7}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\jni\libs\tidylib\tidylib.vcxproj">
-      <Project>{5d87c06b-4dbf-4237-adc3-3123cb56e911}</Project>
     </ProjectReference>
     <ProjectReference Include="..\jni\libs\unzip101e\unzip101e.vcxproj">
       <Project>{6e459b64-c936-4f84-afa9-b78d353d9fbc}</Project>

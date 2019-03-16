@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{5C97AA54-337B-4FCC-8F94-822DB1FD15C1}</ProjectGuid>
+    <ProjectGuid>{4B79C2D0-6D11-45D6-A35C-A01A12A89E6E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>libmobi</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>

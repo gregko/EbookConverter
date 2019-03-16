@@ -1591,7 +1591,8 @@ void ConverterPass2::description()
     //</src-title-info>
 
     //<document-info>
-    document_info();
+	if (s_->IsNextElement("document-info"))
+	    document_info();
     //</document-info>
 
     //<publish-info>
