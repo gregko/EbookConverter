@@ -58,6 +58,23 @@ static bool startFileInZip(zipFile zf, const char *name, bool compress)
 	return true;
 }
 
+// like strstr() if block is not 0-terminated
+static char* search_block(const char* block, size_t block_len, const char *target) {
+	size_t len = strlen(target);
+	if (!len || block_len < len)
+		return NULL; // for 0-length target strstr returns block pointer, I don't care.
+	char *pc;
+	block_len -= len - 1; // no point searching for the first character near end of block
+	while (pc = (char*)memchr(block, *target, block_len)) {
+		if (memcmp(pc, target, len) == 0)
+			return pc;
+		pc++;
+		block_len -= (pc - block);
+		block = pc;
+	}
+	return NULL;
+}
+
 /**
 @brief Dump parsed markup files and resources into created folder
 @param[in] rawml MOBIRawml structure holding parsed records
@@ -182,8 +199,10 @@ int epub_rawml_parts(const MOBIRawml *rawml, const char *epub_fn) {
 			sprintf(partname, "OEBPS/flow%05zu.%s", curr->uid, file_meta.extension);
 			// optional, get rid of negative text-indent
 			if (file_meta.type == T_CSS) {
-				char *pc = curr->data;
-				while (pc = strstr(pc, "text-indent:")) {
+				char *pc = (char*)curr->data;
+				int data_len = curr->size;
+				// Previously was using here strstr(), but curr->data is not 0-terminated
+				while (pc = search_block(pc, data_len, "text-indent:")) {
 					pc += 12; // strlen("text-indent:");
 					while (isspace(*pc) && (pc - (char*)curr->data) < curr->size)
 						pc++;
@@ -195,6 +214,7 @@ int epub_rawml_parts(const MOBIRawml *rawml, const char *epub_fn) {
 						// now *pc is maybe %, p for px etc.
 						*(--pc) = '0';
 					}
+					data_len = curr->size - (pc - (char*)curr->data);
 				}
 			}
 			noError = startFileInZip(zf, partname, true);
