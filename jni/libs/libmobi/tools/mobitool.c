@@ -590,7 +590,7 @@ int loadfilename(const char *fullpath) {
     MOBI_RET mobi_ret;
     int ret = SUCCESS;
     /* Initialize main MOBIData structure */
-    MOBIData *m = mobi_init();
+    MOBIData *m = mobi_init(); // Look at m->rh.encrytpion_type, 0 for DRM-free, unencrypted
     if (m == NULL) {
         printf("Memory allocation failed\n");
         return ERROR;

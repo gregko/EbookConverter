@@ -28,6 +28,7 @@
 
 /* return codes */
 #define ERROR 1
+#define ENCRYPTED 10
 #define SUCCESS 0
 
 
@@ -355,6 +356,11 @@ int convertMobiToEpub(const char* mobiFn, const char* epubFn, const char* pid, b
 		return false;
 	}
 	MOBIRawml *rawml = loadMobiRawml(m, mobiFn, pid, parse_kf7_opt);
+	if (m->rh != NULL && m->rh->encryption_type != 0) {
+		mobi_free(m);
+		mobi_free_rawml(rawml);
+		return ENCRYPTED;
+	}
 	if (rawml == NULL) {
 		mobi_free(m);
 		return ERROR;
