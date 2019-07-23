@@ -1374,8 +1374,9 @@ void ConverterPass2::binary()
             s_->Error("<binary> data expected");
 
         pout_->BeginFile((String("OPS/") + b.file_).c_str(), false);
-        if(!DecodeBase64(t.s_.c_str(), pout_))
-            s_->Error("base64 error");
+		if (!DecodeBase64(t.s_.c_str(), pout_))
+			fprintf(stderr, "base64 error\n");
+            //s_->Error("base64 error");
     }
 
     s_->EndElement();
