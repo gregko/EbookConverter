@@ -2,6 +2,7 @@
 NDK_TOOLCHAIN_VERSION := clang
 APP_PLATFORM := android-16
 APP_CFLAGS += -Wno-write-strings -Wno-logical-op-parentheses -Wno-unsequenced -Wno-parentheses -Wno-switch -Wno-#warnings -Wno-invalid-source-encoding
+APP_CFLAGS += -include "C:/android/atVoiceLibs/idiocy_fopen_fd.h"
 APP_CPPFLAGS += -frtti -fexceptions -Wno-logical-op-parentheses -Wno-unsequenced -Wno-parentheses -Wno-switch -Wno-#warnings -Wno-invalid-source-encoding
 APP_ARM_MODE := thumb
 APP_STL := c++_shared
