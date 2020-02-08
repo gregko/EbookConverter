@@ -566,7 +566,7 @@ String ConverterPass2::Findhref(const AttrMap &attrmap) const
         else
             href = (*cit)+":href";
         AttrMap::const_iterator ait = attrmap.find(href);
-        if(ait != attrmap.end())
+        if (ait != attrmap.end())
             return ait->second;
     }
     return "";
@@ -1150,8 +1150,8 @@ void ConverterPass2::a()
     bool notempty = s_->BeginElement("a", &attrmap);
 
     String id = Findhref(attrmap);
-    if(id.empty())
-        s_->Error("<a> should have href attribute");
+    //if(id.empty())
+    //    s_->Error("<a> should have href attribute");
 
     bool anchorSet = false;
     if(id[0] != '#')
