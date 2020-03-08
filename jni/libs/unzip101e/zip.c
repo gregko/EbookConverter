@@ -964,7 +964,7 @@ local int zipFlushWriteBuffer(zi)
 }
 
 extern uLong ZEXPORT zipBytesWritten(zipFile file) {
-	zip_internal* zi;
+	zip_internal* zi = (zip_internal*)file;
 	return zi->ci.stream.total_out;
 }
 
