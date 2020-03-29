@@ -253,7 +253,7 @@ void LexScanner::EndElement()
 {
 	LexScanner::Token t1 = GetToken();
 	LexScanner::Token t2 = GetToken();
-    if(t1.type_ != END || t2.type_ != CLOSE)
+    if(/*t1.type_ != END ||*/ t2.type_ != CLOSE) // GKochaniak, commented out t1.type_ != END, crashes on v elements
         Error("etag expected");
 }
 
