@@ -2338,8 +2338,14 @@ void ConverterPass2::tr()
             th();
         else if(s_->IsNextElement("td"))
             td();
-        else
-            break;
+        else {
+            LexScanner::Token t1 = s_->GetToken();
+            s_->UngetToken(t1);
+            if (t1.type_ == LexScanner::START)
+                s_->SkipElement();
+            else
+                break;
+        }
         //</th>, </td>
     }
 
