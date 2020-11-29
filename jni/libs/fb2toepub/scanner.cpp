@@ -1053,7 +1053,7 @@ YY_DECL
 		yy_current_state = (yy_start);
 	yy_match:
 		clock_t tim1 = clock();
-		if ((tim1 - tim0) >= 10*CLOCKS_PER_SEC) { // 2 seconds
+		if ((tim1 - tim0) >= 60*CLOCKS_PER_SEC) { // 60 seconds
 			Error("Infinite loop, damaged FB2 file?\n");
 			break;
 		}
