@@ -1118,14 +1118,14 @@ void ConverterPass2::FictionBook()
 
     //<body>
     body();
-    if(s_->IsNextElement("body"))
+    if(s_->IsNextElement("body"))   // maybe "notes"...
         body();
-    if(s_->IsNextElement("body"))
+    if(s_->IsNextElement("body"))   // maybe "comments"...
         body();
     //</body>
 
     //<binary>
-    while(s_->IsNextElement("binary"))
+    while(s_->IsNextElement("binary"))  // images and other binary resources
         binary();
     //</binary>
 
@@ -1344,7 +1344,7 @@ void ConverterPass2::binary()
 	bool bMod;
 	do {
 		bMod = false;
-		for (int i = 0; i < binaries_.size(); i++) {
+		for (int i = 0; i < (int)binaries_.size(); i++) {
 			if ("bin/" + b.file_ == binaries_[i].file_) {
 				sprintf(buf, "%d", idx++);
 				b.file_ = fname + buf + fext;

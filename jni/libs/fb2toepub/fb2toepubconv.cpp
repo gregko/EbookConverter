@@ -59,5 +59,4 @@ int Convert(InStm *pin, const strvector &css, const strvector &fonts, const strv
     return 0;
 }
 
-
 };  //namespace Fb2ToEpub

@@ -238,7 +238,7 @@ String LexScanner::SimpleTextElement(const String &element, AttrMap *attrmap)
     SetScannerDataMode setDataMode(this);
     String text;
     LexScanner::Token t = GetToken();
-    if(t.type_ == DATA)
+    if (t.type_ == DATA)
     {
         text = t.s_;
         t = GetToken();

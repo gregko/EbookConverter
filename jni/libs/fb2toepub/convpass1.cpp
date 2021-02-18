@@ -23,6 +23,8 @@
 #include "converter.h"
 #include <sstream>
 #include <set>
+#include "base64.h"
+#include "streamconv.h"
 
 namespace Fb2ToEpub
 {
@@ -35,6 +37,8 @@ namespace Fb2ToEpub
 		ConverterPass1(LexScanner *scanner, UnitArray *units) : s_(scanner), units_(units), sectionCnt_(0), textMode_(false), bodyType_(Unit::BODY_NONE) {}
 
 		void Scan();
+        void GetMetaData(Fb2MetaData& md, bool wantCoverImage);
+        void binaryFindCoverImg(String coverImgId, std::vector<unsigned char>& bytes);
 
 	private:
 		Ptr<LexScanner>         s_;
@@ -53,8 +57,9 @@ namespace Fb2ToEpub
 		// Old Lex Scanner FictionBook elements
 		void FictionBook();
 		void a(String *plainText);
-		void annotation(bool startUnit = false);
-		//void author                 ();
+        void annotation(bool startUnit = false);
+        String annotationText(bool startUnit = false);
+        //void author                 ();
 		//void binary                 ();
 		void body(Unit::BodyType bodyType);
 		//void book_name              ();
@@ -123,6 +128,196 @@ void ConverterPass1::Scan()
 {
     s_->SkipXMLDeclaration();
     FictionBook();
+}
+
+void ConverterPass1::GetMetaData(Fb2MetaData& md, bool wantCoverImage) {
+    s_->SkipXMLDeclaration();
+
+    // Below repeats FictionBook() code up to description
+    AttrMap attrmap;
+    s_->BeginNotEmptyElement("FictionBook", &attrmap);
+
+    // namespaces
+    AttrMap::const_iterator cit = attrmap.begin(), cit_end = attrmap.end();
+    bool has_fb = false, has_emptyfb = false;
+    for (; cit != cit_end; ++cit)
+    {
+        static const String xmlns = "xmlns";
+        static const std::size_t xmlns_len = xmlns.length();
+        static const String fbID = "http://www.gribuser.ru/xml/fictionbook/2.0", xlID = "http://www.w3.org/1999/xlink";
+        static const String fbID21 = "http://www.gribuser.ru/xml/fictionbook/2.1";
+
+        if (!cit->second.compare(fbID))
+        {
+            if (!cit->first.compare(xmlns))
+                has_emptyfb = true;
+            else if (cit->first.compare(0, xmlns_len + 1, xmlns + ":"))
+                s_->Error("bad FictionBook namespace definition");
+            has_fb = true;
+        }
+        else if (!cit->second.compare(fbID21))
+        {
+            if (!cit->first.compare(xmlns))
+                has_emptyfb = true;
+            else if (cit->first.compare(0, xmlns_len + 1, xmlns + ":"))
+                s_->Error("bad FictionBook namespace definition");
+            has_fb = true;
+        }
+        else if (!cit->second.compare(xlID))
+        {
+            if (cit->first.compare(0, xmlns_len + 1, xmlns + ":"))
+                s_->Error("bad xlink namespace definition");
+            xlns_.insert(cit->first.substr(xmlns_len + 1));
+        }
+    }
+    if (!has_fb)
+        s_->Error("missing FictionBook namespace definition");
+    if (!has_emptyfb)
+        s_->Error("non-empty FictionBook namespace not implemented");
+
+    //<stylesheet>
+    s_->SkipAll("stylesheet");
+    //</stylesheet>
+
+    s_->BeginNotEmptyElement("description");
+
+    //<title-info>
+    s_->BeginNotEmptyElement("title-info");
+
+    String coverImgId;
+
+    for (LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+    {
+        if (!t.s_.compare("genre")) {
+            s_->CheckAndSkipElement("genre");
+            s_->SkipAll("genre");
+        }
+        else if (!t.s_.compare("author")) {
+            s_->BeginNotEmptyElement("author");
+
+            String author, fn, mn, ln;
+            for (int i = 0; i < 4; i++) {
+                if (s_->IsNextElement("first-name"))
+                    fn = s_->SimpleTextElement("first-name");
+                else if (s_->IsNextElement("middle-name"))
+                    mn = s_->SimpleTextElement("middle-name");
+                else if (s_->IsNextElement("last-name"))
+                    ln = s_->SimpleTextElement("last-name");
+                else if (s_->IsNextElement("nickname"))
+                    author = s_->SimpleTextElement("nickname");
+            }
+            if (author.empty()) {
+                author = ln;
+                author = Concat(author, ", ", fn);
+                author = Concat(author, " ", mn);
+            }
+
+            // authors_.push_back(author);
+            if (!md.author.empty())
+                md.author += "; ";
+            md.author += author;
+            s_->SkipRestOfElementContent();
+        }
+        else if (!t.s_.compare("book-title")) {
+            md.title = s_->SimpleTextElement("book-title");
+        }
+        else if (!t.s_.compare("lang")) {
+            md.lang = s_->SimpleTextElement("lang");
+        }
+        else if (!t.s_.compare("annotation")) {
+            md.description = annotationText(true);
+        }
+        else if (!t.s_.compare("coverpage")) {
+            //coverpage();
+            s_->BeginNotEmptyElement("coverpage");
+            units_->push_back(Unit(bodyType_, Unit::COVERPAGE, 0, -1));
+            do {
+                //image(false);
+                AttrMap imgAttrMap;
+                s_->BeginElement("image", &imgAttrMap);
+                if (imgAttrMap.size() > 0) {
+                    std::map<String, String>::iterator it = imgAttrMap.begin();
+                    while (it != imgAttrMap.end())
+                    {
+                        if (it->first.find("href") >= 0) {
+                            coverImgId = it->second; // is like "#cover.jpg"
+                            if (coverImgId[0] == '#')
+                                coverImgId = coverImgId.substr(1);
+                            break;
+                        }
+                        it++;
+                    }
+                }
+            }  while (s_->IsNextElement("image"));
+            s_->EndElement();
+
+        }
+        else {
+            s_->SkipElement();
+        }
+    }
+    s_->SkipRestOfElementContent(); // skip rest of <title-info>
+    s_->SkipRestOfElementContent(); // skip rest of <description>
+    // end of description
+
+    md.hasCover = !coverImgId.empty();
+
+    if (!wantCoverImage || coverImgId.empty()) // will be empty if wantCoverImage is false
+        return;
+
+    //<binary>
+    md.coverImgBytes.clear();
+    md.coverImgBytes.reserve(128 * 1024);
+    while (s_->IsNextElement("binary")) {
+        binaryFindCoverImg(coverImgId, md.coverImgBytes); // search for cover image
+        if (md.coverImgBytes.size() > 0)
+            return;
+    }
+    while (!s_->IsNextElement("body")) {
+        LexScanner::Token t = s_->GetToken();
+        s_->UngetToken(t);
+        if (t.type_ == LexScanner::START)
+            s_->SkipElement();
+        else
+            s_->SkipRestOfElementContent();
+    }
+
+    //<body> elements - ignore for metatdata extraction
+    while (s_->IsNextElement("body"))
+        s_->SkipElement();
+    //</body>
+
+    //<binary>
+    while (s_->IsNextElement("binary")) { // images and other binary resources
+        binaryFindCoverImg(coverImgId, md.coverImgBytes); // search for cover image, if not found yet.
+        if (md.coverImgBytes.size() > 0)
+            return;
+    }
+    //</binary>
+
+}
+
+void ConverterPass1::binaryFindCoverImg(String coverImgId, std::vector<unsigned char>& bytes) {
+    AttrMap attrmap;
+    s_->BeginNotEmptyElement("binary", &attrmap);
+    if (attrmap["id"] != coverImgId) {
+        s_->SkipRestOfElementContent();
+        return;
+    }
+    // store binary data in bytes vector
+    {
+        SetScannerDataMode setDataMode(s_);
+        LexScanner::Token t = s_->GetToken();
+        if (t.type_ != LexScanner::DATA)
+            s_->Error("<binary> data expected");
+        // pout_->BeginFile((String("OPS/") + b.file_).c_str(), false);
+        Ptr<OutStm> pout = CreateOutMemStm(bytes);
+        if (!DecodeBase64(t.s_.c_str(), pout))
+            fprintf(stderr, "base64 error\n");
+        //s_->Error("base64 error");
+    }
+
+    s_->EndElement();
 }
 
 //-----------------------------------------------------------------------
@@ -387,6 +582,51 @@ void ConverterPass1::annotation(bool startUnit)
     }
 
     s_->EndElement();
+}
+
+//-----------------------------------------------------------------------
+String ConverterPass1::annotationText(bool startUnit)
+{
+    AttrMap attrmap;
+    bool notempty = s_->BeginElement("annotation", &attrmap);
+    if (startUnit)
+        units_->push_back(Unit(bodyType_, Unit::ANNOTATION, 0, -1));
+    AddId(attrmap);
+    String ann;
+    if (!notempty)
+        return ann;
+    for (LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+    {
+        //<p>, <poem>, <cite>, <subtitle>, <empty-line>, <table>
+        if (!t.s_.compare("p")) {
+            String text;
+            p(&text);
+            ann += text + "\n";
+        }
+        else if (!t.s_.compare("poem"))
+            poem();
+        else if (!t.s_.compare("cite"))
+            cite();
+        else if (!t.s_.compare("subtitle"))
+            subtitle(&ann);
+        else if (!t.s_.compare("empty-line")) {
+            empty_line();
+            ann += "\n";
+        }
+        else if (!t.s_.compare("table"))
+            table();
+        else
+        {
+            std::ostringstream ss;
+            ss << "<" << t.s_ << "> unexpected in <annotation>";
+            //s_->Error(ss.str());
+            s_->SkipElement();
+        }
+        //</p>, </poem>, </cite>, </subtitle>, </empty-line>, </table>
+    }
+
+    s_->EndElement();
+    return ann;
 }
 
 //-----------------------------------------------------------------------
@@ -1020,5 +1260,12 @@ void FB2TOEPUB_DECL DoConvertionPass1(LexScanner *scanner, UnitArray *units)
     conv->Scan();
 }
 
+void FB2TOEPUB_DECL DoGetMetaData(const char* fnameFb2, bool wantCoverImage, Fb2MetaData& md) {
+    UnitArray units;
+    // create input stream - this just takes the very first file inside ZIP... If it's not .fb2, won't work.
+    Ptr<InStm> pin = CreateInUnicodeStm(CreateUnpackStm(fnameFb2));
+    Ptr<ConverterPass1> conv = new ConverterPass1(CreateScanner(pin), &units);
+    conv->GetMetaData(md, wantCoverImage);
+}
 
 };  //namespace Fb2ToEpub

@@ -169,6 +169,51 @@ Ptr<OutStm> CreateOutFileStm(const char *name)
 }
 
 
+//-----------------------------------------------------------------------
+// OutMemStm implementation
+//-----------------------------------------------------------------------
+class OutMemStm : public OutStm, Noncopyable
+{
+    std::vector<unsigned char>* bytes_;
+    String name_;
+public:
+    explicit OutMemStm(std::vector<unsigned char>& bytes);
+    ~OutMemStm() {}
+
+    //virtuals
+    void    PutChar(char c);
+    void    Write(const void *p, size_t cnt);
+};
+
+//-----------------------------------------------------------------------
+OutMemStm::OutMemStm(std::vector<unsigned char>& bytes)
+{
+    bytes_ = &bytes;
+}
+
+//-----------------------------------------------------------------------
+void OutMemStm::PutChar(char c)
+{
+    bytes_->push_back(c);
+}
+
+//-----------------------------------------------------------------------
+void OutMemStm::Write(const void *p, size_t cnt)
+{
+    unsigned char* pc = (unsigned char*)p;
+    for (int i = 0; i < (int)cnt; i++)
+        bytes_->push_back(*pc++);
+}
+
+//-----------------------------------------------------------------------
+Ptr<OutStm> CreateOutMemStm(std::vector<unsigned char>& bytes)
+{
+    OutMemStm *p = new OutMemStm(bytes);
+    return p;
+}
+
+
+
 /*
 //-----------------------------------------------------------------------
 // MEMORY INPUT STREAM

@@ -96,6 +96,8 @@ class OutStm : public OutStmI, public Object {};
 //-----------------------------------------------------------------------
 Ptr<InStm> FB2TOEPUB_DECL   CreateInFileStm(const char *name);
 Ptr<OutStm> FB2TOEPUB_DECL  CreateOutFileStm(const char *name);
+Ptr<OutStm> FB2TOEPUB_DECL  CreateOutMemStm(std::vector<unsigned char>& bytes);
+
 
 //-----------------------------------------------------------------------
 // INPUT STREAM FROM MEMORY

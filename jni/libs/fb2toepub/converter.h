@@ -162,6 +162,14 @@ namespace Fb2ToEpub
     //-----------------------------------------------------------------------
     typedef std::map<String, String>  ReferenceMap;   // (refid -> file) or (refid -> refid)
 
+    typedef struct {
+        String author;
+        String title;
+        String lang;
+        String description;
+        bool   hasCover;
+        std::vector<unsigned char> coverImgBytes;
+    } Fb2MetaData;
 
     //-----------------------------------------------------------------------
     // PRINT INFO
@@ -172,6 +180,8 @@ namespace Fb2ToEpub
     // CONVERTION PASS 1 (DETERMINE DOCUMENT STRUCTURE AND COLLECT ALL CROSS-REFERENCES INSIDE THE FB2 FILE)
     //-----------------------------------------------------------------------
     void FB2TOEPUB_DECL DoConvertionPass1(LexScanner *scanner, UnitArray *units);
+
+    void FB2TOEPUB_DECL DoGetMetaData(const char* fnameFb2, bool wantCoverImage, Fb2MetaData& md);
 
     //-----------------------------------------------------------------------
     // CONVERTER PASS 2 (CREATE EPUB DOCUMENT)
