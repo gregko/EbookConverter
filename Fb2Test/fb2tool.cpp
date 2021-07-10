@@ -130,6 +130,6 @@ int main(int argc, char* argv[])
 		outName = outName.substr(0, n);
 	outName += +".epub";
 
-    return getFb2MetaData(argv[1]);
-    //return fb2ToEpub(argv[1], NULL, outName.c_str());
+    //return getFb2MetaData(argv[1]);
+    return fb2ToEpub(argv[1], NULL, outName.c_str());
 }

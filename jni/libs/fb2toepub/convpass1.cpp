@@ -1109,12 +1109,23 @@ void ConverterPass1::title(String *plainText, bool startUnit)
             plainText = &buf;
     }
 
-    for(LexScanner::Token t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+    SetScannerDataMode setDataMode(s_);
+    LexScanner::Token t = s_->LookAhead();
+    if (t.type_ == LexScanner::DATA) {
+        const char *pc = s_->GetToken().s_.c_str();
+        *plainText = pc;
+        s_->EndElement();
+        ClrScannerDataMode clrDataMode(s_);
+        return;
+    }
+
+    ClrScannerDataMode clrDataMode(s_);
+    for (; t.type_ == LexScanner::START; t = s_->LookAhead())
     {
-        if(!t.s_.compare("p"))
+        if (!t.s_.compare("p"))
         {
             //<p>
-            if(!plainText)
+            if (!plainText)
                 p();
             else
             {
@@ -1124,11 +1135,11 @@ void ConverterPass1::title(String *plainText, bool startUnit)
             }
             //</p>
         }
-        else if(!t.s_.compare("empty-line"))
+        else if (!t.s_.compare("empty-line"))
         {
             //<empty-line>
             empty_line();
-            if(plainText)
+            if (plainText)
                 *plainText += " ";
             //</empty-line>
         }
@@ -1137,11 +1148,11 @@ void ConverterPass1::title(String *plainText, bool startUnit)
             std::ostringstream ss;
             ss << "<" << t.s_ << "> unexpected in <title>";
             //s_->Error(ss.str());
-			s_->SkipElement();
+            s_->SkipElement();
         }
     }
 
-    if(startUnit)
+    if (startUnit)
         units_->back().title_ = *plainText;
 
     s_->EndElement();
