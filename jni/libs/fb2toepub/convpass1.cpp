@@ -1111,14 +1111,17 @@ void ConverterPass1::title(String *plainText, bool startUnit)
 
     SetScannerDataMode setDataMode(s_);
     LexScanner::Token t = s_->LookAhead();
-    if (t.type_ == LexScanner::DATA) {
-        const char *pc = s_->GetToken().s_.c_str();
-        *plainText = pc;
-        s_->EndElement();
-        ClrScannerDataMode clrDataMode(s_);
-        return;
+    if (t.type_ != LexScanner::START) {
+        if (t.type_ == LexScanner::DATA) {
+            const char *pc = s_->GetToken().s_.c_str();
+            while (*pc==' ' || *pc=='\t' || *pc=='\n' || *pc=='\r' || *pc=='\v' || *pc=='\f')
+                pc++;
+            if (*pc)
+                *plainText = pc;
+            ClrScannerDataMode clrDataMode(s_);
+            t = s_->LookAhead();
+        }
     }
-
     ClrScannerDataMode clrDataMode(s_);
     for (; t.type_ == LexScanner::START; t = s_->LookAhead())
     {

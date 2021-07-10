@@ -2207,39 +2207,45 @@ void ConverterPass2::title(bool startUnit, const String &anchorid)
     pout_->WriteFmt("<div class=\"title\"");
     CopyXmlLang(attrmap);
     pout_->WriteFmt(">\n");
+
     SetScannerDataMode setDataMode(s_);
     LexScanner::Token t = s_->LookAhead();
-    if (t.type_ == LexScanner::DATA) {
-        sectionSize_ += t.size_;
-        const char *pc = s_->GetToken().s_.c_str();
-        pout_->WriteStr("<h1 class='e_h1'>");
-        pout_->WriteStr(pc);
-        pout_->WriteStr("</h1></div>\n");
-        ClrScannerDataMode clrDataMode(s_);
+    if (t.type_ != LexScanner::START) {
+        if (t.type_ == LexScanner::DATA) {
+            const char *pc = s_->GetToken().s_.c_str();
+            while (*pc == ' ' || *pc == '\t' || *pc == '\n' || *pc == '\r' || *pc == '\v' || *pc == '\f')
+                pc++;
+            if (*pc) {
+                sectionSize_ += t.size_;
+                pout_->WriteStr("<h1 class='e_h1'>");
+                pout_->WriteStr(pc);
+                pout_->WriteStr("</h1>\n");
+            }
+            ClrScannerDataMode clrDataMode(s_);
+            t = s_->LookAhead();
+        }
     }
-    else {
-        ClrScannerDataMode clrDataMode(s_);
-        for (t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+    ClrScannerDataMode clrDataMode(s_);
+    for (t = s_->LookAhead(); t.type_ == LexScanner::START; t = s_->LookAhead())
+    {
+        if (!t.s_.compare("p"))
         {
-            if (!t.s_.compare("p"))
-            {
-                //<p>
-                p("h1", "e_h1");
-                //</p>
-            }
-            else if (!t.s_.compare("empty-line"))
-            {
-                //<empty-line>
-                empty_line();
-                //</empty-line>
-            }
-            else
-            {
-                std::ostringstream ss;
-                ss << "<" << t.s_ << "> unexpected in <title>";
-                //s_->Error(ss.str());
-                s_->SkipElement();
-            }
+            //<p>
+            p("h1", "e_h1");
+            //</p>
+        }
+        else if (!t.s_.compare("empty-line"))
+        {
+            //<empty-line>
+            empty_line();
+            //</empty-line>
+        }
+        else
+        {
+            std::ostringstream ss;
+            ss << "<" << t.s_ << "> unexpected in <title>";
+            //s_->Error(ss.str());
+            s_->SkipElement();
         }
     }
 
