@@ -5,35 +5,28 @@
  * @example mobitool.c
  * Program for testing libmobi library
  *
- * Copyright (c) 2014 Bartek Fabiszewski
+ * Copyright (c) 2020 Bartek Fabiszewski
  * http://www.fabiszewski.net
  *
  * Licensed under LGPL, either version 3, or any later.
  * See <http://www.gnu.org/licenses/>
- *
- * Modified slightly by Grzegorz Kochaniak, greg@hyperionics.com, in Feb. 2016 -
- * changed variable length arrays to alloca() calls, added convert to EPUB module
- * and command line option.
  */
 
-#include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <stdlib.h>
-#ifdef _WIN32
-#include <direct.h> // needed for _mkdir()
-#include "getopt.h"
-#else
-#include <unistd.h>
-#endif
 #include <ctype.h>
 #include <time.h>
-#include <sys/stat.h>
 #include <errno.h>
 /* include libmobi header */
 #include <mobi.h>
-#include "save_epub.h"
-#ifdef HAVE_CONFIG_H
-# include "../config.h"
+#include "common.h"
+
+/* miniz file is needed for EPUB creation */
+#ifdef USE_XMLWRITER
+# define MINIZ_HEADER_FILE_ONLY
+# define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
+# include "../src/miniz.c"
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -45,131 +38,65 @@
 #endif
 /* encryption */
 #ifdef USE_ENCRYPTION
-# define PRINT_ENC_USG " [-p pid]"
-# define PRINT_ENC_ARG "p:"
+# define PRINT_ENC_USG " [-p pid] [-P serial]"
+# define PRINT_ENC_ARG "p:P:"
 #else
 # define PRINT_ENC_USG ""
 # define PRINT_ENC_ARG ""
 #endif
-/* return codes */
-#define ERROR 1
-#define SUCCESS 0
-
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
-
-#if defined(__clang__)
-# define COMPILER "clang " __VERSION__
-#elif defined(__SUNPRO_C)
-# define COMPILER "suncc " STR(__SUNPRO_C)
-#elif defined(__GNUC__)
-# if (defined(__MINGW32__) || defined(__MINGW64__))
-#  define COMPILER "gcc (MinGW) " __VERSION__
-# else
-#  define COMPILER "gcc " __VERSION__
-# endif
-#elif defined(_MSC_VER)
-# define COMPILER "MSVC++ " STR(_MSC_VER)
+/* xmlwriter */
+#ifdef USE_XMLWRITER
+# define PRINT_EPUB_ARG "e"
 #else
-# define COMPILER "unknown"
+# define PRINT_EPUB_ARG ""
 #endif
 
-#if !defined S_ISDIR && defined S_IFDIR
-# define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
-#endif
-#ifndef S_ISDIR
-# error "At least one of S_ISDIR or S_IFDIR macros is required"
+#if HAVE_ATTRIBUTE_NORETURN 
+static void exit_with_usage(const char *progname) __attribute__((noreturn));
+#else
+static void exit_with_usage(const char *progname);
 #endif
 
-#define FULLNAME_MAX 1024
+#define EPUB_CONTAINER "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n\
+  <rootfiles>\n\
+    <rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\"/>\n\
+  </rootfiles>\n\
+</container>"
+#define EPUB_MIMETYPE "application/epub+zip"
 
 /* command line options */
-int dump_rawml_opt = 0;
-int print_rec_meta_opt = 0;
-int dump_rec_opt = 0;
-int parse_kf7_opt = 0;
-int dump_parts_opt = 0;
-int dump_epub_opt = 0;
-int print_rusage_opt = 0;
-int outdir_opt = 0;
+bool dump_cover_opt = false;
+bool dump_rawml_opt = false;
+bool create_epub_opt = false;
+bool print_extended_meta_opt = false;
+bool print_rec_meta_opt = false;
+bool dump_rec_opt = false;
+bool parse_kf7_opt = false;
+bool dump_parts_opt = false;
+bool print_rusage_opt = false;
+bool extract_source_opt = false;
+bool split_opt = false;
 #ifdef USE_ENCRYPTION
-int setpid_opt = 0;
+bool setpid_opt = false;
+bool setserial_opt = false;
 #endif
 
 /* options values */
-char outdir[FILENAME_MAX];
-char* epub_fn = outdir;
 #ifdef USE_ENCRYPTION
 char *pid = NULL;
+char *serial = NULL;
 #endif
-
-#ifdef _WIN32
-const int separator = '\\';
-#else
-const int separator = '/';
-#endif
-
-static int mt_mkdir (const char *filename) {
-    int ret;
-#ifdef _WIN32
-    ret = _mkdir(filename);
-#else
-    ret = mkdir(filename, S_IRWXU);
-#endif
-    return ret;
-}
-
-/**
- @brief Parse file name into file path and base name
- @param[in] fullpath Full file path
- @param[in,out] dirname Will be set to full dirname
- @param[in,out] basename Will be set to file basename
- */
-void split_fullpath(const char *fullpath, char *dirname, char *basename) {
-    char *p = strrchr(fullpath, separator);
-    if (p) {
-        p += 1;
-        strncpy(dirname, fullpath, (p - fullpath));
-        dirname[p - fullpath] = '\0';
-        strncpy(basename, p, strlen(p) + 1);
-    }
-    else {
-        dirname[0] = '\0';
-        strncpy(basename, fullpath, strlen(fullpath) + 1);
-    }
-    p = strrchr(basename, '.');
-    if (p) {
-        *p = '\0';
-    }
-}
-
-/**
- @brief Check whether given path exists and is a directory
- @param[in] path Path to be tested
- */
-bool dir_exists(const char *path) {
-    struct stat sb;
-    if (stat(path, &sb) != 0) {
-        int errsv = errno;
-        printf("Path \"%s\" is not accessible (%s)\n", path, strerror(errsv));
-        return false;
-    }
-    else if (!S_ISDIR(sb.st_mode)) {
-        printf("Path \"%s\" is not a directory\n", path);
-        return false;
-    }
-    return true;
-}
 
 /**
  @brief Print all loaded headers meta information
  @param[in] m MOBIData structure
  */
-void print_meta(const MOBIData *m) {
+static void print_meta(const MOBIData *m) {
     /* Full name stored at offset given in MOBI header */
-    if (m->mh && m->mh->full_name_offset && m->mh->full_name_length) {
+    if (m->mh && m->mh->full_name) {
         char full_name[FULLNAME_MAX + 1];
-        if(mobi_get_fullname(m, full_name, FULLNAME_MAX) == MOBI_SUCCESS) {
+        if (mobi_get_fullname(m, full_name, FULLNAME_MAX) == MOBI_SUCCESS) {
             printf("\nFull name: %s\n", full_name);
         }
     }
@@ -197,7 +124,7 @@ void print_meta(const MOBIData *m) {
     /* Record 0 header */
     if (m->rh) {
         printf("\nRecord 0 header:\n");
-        printf("compresion type: %u\n", m->rh->compression_type);
+        printf("compression type: %u\n", m->rh->compression_type);
         printf("text length: %u\n", m->rh->text_length);
         printf("text record count: %u\n", m->rh->text_record_count);
         printf("text record size: %u\n", m->rh->text_record_size);
@@ -208,25 +135,25 @@ void print_meta(const MOBIData *m) {
     if (m->mh) {
         printf("\nMOBI header:\n");
         printf("identifier: %s\n", m->mh->mobi_magic);
-        if(m->mh->header_length) { printf("header length: %u\n", *m->mh->header_length); }
-        if(m->mh->mobi_type) { printf("mobi type: %u\n", *m->mh->mobi_type); }
-        if(m->mh->text_encoding) { printf("text encoding: %u\n", *m->mh->text_encoding); }
-        if(m->mh->uid) { printf("unique id: %u\n", *m->mh->uid); }
-        if(m->mh->version) { printf("file version: %u\n", *m->mh->version); }
-        if(m->mh->orth_index) { printf("orth index: %u\n", *m->mh->orth_index); }
-        if(m->mh->infl_index) { printf("infl index: %u\n", *m->mh->infl_index); }
-        if(m->mh->names_index) { printf("names index: %u\n", *m->mh->names_index); }
-        if(m->mh->keys_index) { printf("keys index: %u\n", *m->mh->keys_index); }
-        if(m->mh->extra0_index) { printf("extra0 index: %u\n", *m->mh->extra0_index); }
-        if(m->mh->extra1_index) { printf("extra1 index: %u\n", *m->mh->extra1_index); }
-        if(m->mh->extra2_index) { printf("extra2 index: %u\n", *m->mh->extra2_index); }
-        if(m->mh->extra3_index) { printf("extra3 index: %u\n", *m->mh->extra3_index); }
-        if(m->mh->extra4_index) { printf("extra4 index: %u\n", *m->mh->extra4_index); }
-        if(m->mh->extra5_index) { printf("extra5 index: %u\n", *m->mh->extra5_index); }
-        if(m->mh->non_text_index) { printf("non text index: %u\n", *m->mh->non_text_index); }
-        if(m->mh->full_name_offset) { printf("full name offset: %u\n", *m->mh->full_name_offset); }
-        if(m->mh->full_name_length) { printf("full name length: %u\n", *m->mh->full_name_length); }
-        if(m->mh->locale) {
+        if (m->mh->header_length) { printf("header length: %u\n", *m->mh->header_length); }
+        if (m->mh->mobi_type) { printf("mobi type: %u\n", *m->mh->mobi_type); }
+        if (m->mh->text_encoding) { printf("text encoding: %u\n", *m->mh->text_encoding); }
+        if (m->mh->uid) { printf("unique id: %u\n", *m->mh->uid); }
+        if (m->mh->version) { printf("file version: %u\n", *m->mh->version); }
+        if (m->mh->orth_index) { printf("orth index: %u\n", *m->mh->orth_index); }
+        if (m->mh->infl_index) { printf("infl index: %u\n", *m->mh->infl_index); }
+        if (m->mh->names_index) { printf("names index: %u\n", *m->mh->names_index); }
+        if (m->mh->keys_index) { printf("keys index: %u\n", *m->mh->keys_index); }
+        if (m->mh->extra0_index) { printf("extra0 index: %u\n", *m->mh->extra0_index); }
+        if (m->mh->extra1_index) { printf("extra1 index: %u\n", *m->mh->extra1_index); }
+        if (m->mh->extra2_index) { printf("extra2 index: %u\n", *m->mh->extra2_index); }
+        if (m->mh->extra3_index) { printf("extra3 index: %u\n", *m->mh->extra3_index); }
+        if (m->mh->extra4_index) { printf("extra4 index: %u\n", *m->mh->extra4_index); }
+        if (m->mh->extra5_index) { printf("extra5 index: %u\n", *m->mh->extra5_index); }
+        if (m->mh->non_text_index) { printf("non text index: %u\n", *m->mh->non_text_index); }
+        if (m->mh->full_name_offset) { printf("full name offset: %u\n", *m->mh->full_name_offset); }
+        if (m->mh->full_name_length) { printf("full name length: %u\n", *m->mh->full_name_length); }
+        if (m->mh->locale) {
             const char *locale_string = mobi_get_locale_string(*m->mh->locale);
             if (locale_string) {
                 printf("locale: %s (%u)\n", locale_string, *m->mh->locale);
@@ -234,7 +161,7 @@ void print_meta(const MOBIData *m) {
                 printf("locale: unknown (%u)\n", *m->mh->locale);
             }
         }
-        if(m->mh->dict_input_lang) {
+        if (m->mh->dict_input_lang) {
             const char *locale_string = mobi_get_locale_string(*m->mh->dict_input_lang);
             if (locale_string) {
                 printf("dict input lang: %s (%u)\n", locale_string, *m->mh->dict_input_lang);
@@ -242,7 +169,7 @@ void print_meta(const MOBIData *m) {
                 printf("dict input lang: unknown (%u)\n", *m->mh->dict_input_lang);
             }
         }
-        if(m->mh->dict_output_lang) {
+        if (m->mh->dict_output_lang) {
             const char *locale_string = mobi_get_locale_string(*m->mh->dict_output_lang);
             if (locale_string) {
                 printf("dict output lang: %s (%u)\n", locale_string, *m->mh->dict_output_lang);
@@ -250,124 +177,45 @@ void print_meta(const MOBIData *m) {
                 printf("dict output lang: unknown (%u)\n", *m->mh->dict_output_lang);
             }
         }
-        if(m->mh->min_version) { printf("minimal version: %u\n", *m->mh->min_version); }
-        if(m->mh->image_index) { printf("first image index: %u\n", *m->mh->image_index); }
-        if(m->mh->huff_rec_index) { printf("huffman record offset: %u\n", *m->mh->huff_rec_index); }
-        if(m->mh->huff_rec_count) { printf("huffman records count: %u\n", *m->mh->huff_rec_count); }
-        if(m->mh->datp_rec_index) { printf("DATP record offset: %u\n", *m->mh->datp_rec_index); }
-        if(m->mh->datp_rec_count) { printf("DATP records count: %u\n", *m->mh->datp_rec_count); }
-        if(m->mh->exth_flags) { printf("EXTH flags: %u\n", *m->mh->exth_flags); }
-        if(m->mh->unknown6) { printf("unknown: %u\n", *m->mh->unknown6); }
-        if(m->mh->drm_offset) { printf("drm offset: %u\n", *m->mh->drm_offset); }
-        if(m->mh->drm_count) { printf("drm count: %u\n", *m->mh->drm_count); }
-        if(m->mh->drm_size) { printf("drm size: %u\n", *m->mh->drm_size); }
-        if(m->mh->drm_flags) { printf("drm flags: %u\n", *m->mh->drm_flags); }
-        if(m->mh->first_text_index) { printf("first text index: %u\n", *m->mh->first_text_index); }
-        if(m->mh->last_text_index) { printf("last text index: %u\n", *m->mh->last_text_index); }
-        if(m->mh->fdst_index) { printf("FDST offset: %u\n", *m->mh->fdst_index); }
-        if(m->mh->fdst_section_count) { printf("FDST count: %u\n", *m->mh->fdst_section_count); }
-        if(m->mh->fcis_index) { printf("FCIS index: %u\n", *m->mh->fcis_index); }
-        if(m->mh->fcis_count) { printf("FCIS count: %u\n", *m->mh->fcis_count); }
-        if(m->mh->flis_index) { printf("FLIS index: %u\n", *m->mh->flis_index); }
-        if(m->mh->flis_count) { printf("FLIS count: %u\n", *m->mh->flis_count); }
-        if(m->mh->unknown10) { printf("unknown: %u\n", *m->mh->unknown10); }
-        if(m->mh->unknown11) { printf("unknown: %u\n", *m->mh->unknown11); }
-        if(m->mh->srcs_index) { printf("SRCS index: %u\n", *m->mh->srcs_index); }
-        if(m->mh->srcs_count) { printf("SRCS count: %u\n", *m->mh->srcs_count); }
-        if(m->mh->unknown12) { printf("unknown: %u\n", *m->mh->unknown12); }
-        if(m->mh->unknown13) { printf("unknown: %u\n", *m->mh->unknown13); }
-        if(m->mh->extra_flags) { printf("extra record flags: %u\n", *m->mh->extra_flags); }
-        if(m->mh->ncx_index) { printf("NCX offset: %u\n", *m->mh->ncx_index); }
-        if(m->mh->unknown14) { printf("unknown: %u\n", *m->mh->unknown14); }
-        if(m->mh->unknown15) { printf("unknown: %u\n", *m->mh->unknown15); }
-        if(m->mh->fragment_index) { printf("fragment index: %u\n", *m->mh->fragment_index); }
-        if(m->mh->skeleton_index) { printf("skeleton index: %u\n", *m->mh->skeleton_index); }
-        if(m->mh->datp_index) { printf("DATP index: %u\n", *m->mh->datp_index); }
-        if(m->mh->unknown16) { printf("unknown: %u\n", *m->mh->unknown16); }
-        if(m->mh->guide_index) { printf("guide index: %u\n", *m->mh->guide_index); }
-        if(m->mh->unknown17) { printf("unknown: %u\n", *m->mh->unknown17); }
-        if(m->mh->unknown18) { printf("unknown: %u\n", *m->mh->unknown18); }
-        if(m->mh->unknown19) { printf("unknown: %u\n", *m->mh->unknown19); }
-        if(m->mh->unknown20) { printf("unknown: %u\n", *m->mh->unknown20); }
-    }
-}
-
-/**
- @brief Print all loaded EXTH record tags
- @param[in] m MOBIData structure
- */
-void print_exth(const MOBIData *m) {
-    if (m->eh == NULL) {
-        return;
-    }
-    /* Linked list of MOBIExthHeader structures holds EXTH records */
-    const MOBIExthHeader *curr = m->eh;
-    if (curr != NULL) {
-        printf("\nEXTH records:\n");
-    }
-    uint32_t val32;
-    while (curr != NULL) {
-        /* check if it is a known tag and get some more info if it is */
-        MOBIExthMeta tag = mobi_get_exthtagmeta_by_tag(curr->tag);
-        if (tag.tag == 0) {
-            /* unknown tag */
-            /* try to print the record both as string and numeric value */
-            char *str = malloc(curr->size + 1);
-			if (!str) {
-				printf("Memory allocation failed\n");
-				exit(1);
-			}
-            unsigned i = 0;
-            unsigned char *p = curr->data;
-            while (i < curr->size && isprint(*p)) {
-                str[i] = (char)*p++;
-                i++;
-            }
-            str[i] = '\0';
-            val32 = mobi_decode_exthvalue(curr->data, curr->size);
-            printf("Unknown (%i): %s (%u)\n", curr->tag, str, val32);
-			free(str);
-        } else {
-            /* known tag */
-            unsigned i = 0;
-            size_t size = curr->size;
-            char *str = malloc(2 * size + 1);
-			if (!str) {
-				printf("Memory allocation failed\n");
-				exit(1);
-			}
-            unsigned char *data = curr->data;
-            switch (tag.type) {
-                /* numeric */
-                case EXTH_NUMERIC:
-                    val32 = mobi_decode_exthvalue(data, size);
-                    printf("%s: %u\n", tag.name, val32);
-                    break;
-                /* string */
-                case EXTH_STRING:
-                {
-                    char *exth_string = mobi_decode_exthstring(m, data, size);
-                    if (exth_string) {
-                        printf("%s: %s\n", tag.name, exth_string);
-                        free(exth_string);
-                    }
-                    break;
-                }
-                /* binary */
-                case EXTH_BINARY:
-                    while (size--) {
-                        uint8_t val8 = *data++;
-                        sprintf(&str[i], "%02x", val8);
-                        i += 2;
-                    }
-                    printf("%s: 0x%s\n", tag.name, str);
-                    break;
-                default:
-                    break;
-            }
-			free(str);
-        }
-        curr = curr->next;
+        if (m->mh->min_version) { printf("minimal version: %u\n", *m->mh->min_version); }
+        if (m->mh->image_index) { printf("first image index: %u\n", *m->mh->image_index); }
+        if (m->mh->huff_rec_index) { printf("huffman record offset: %u\n", *m->mh->huff_rec_index); }
+        if (m->mh->huff_rec_count) { printf("huffman records count: %u\n", *m->mh->huff_rec_count); }
+        if (m->mh->datp_rec_index) { printf("DATP record offset: %u\n", *m->mh->datp_rec_index); }
+        if (m->mh->datp_rec_count) { printf("DATP records count: %u\n", *m->mh->datp_rec_count); }
+        if (m->mh->exth_flags) { printf("EXTH flags: %u\n", *m->mh->exth_flags); }
+        if (m->mh->unknown6) { printf("unknown: %u\n", *m->mh->unknown6); }
+        if (m->mh->drm_offset) { printf("drm offset: %u\n", *m->mh->drm_offset); }
+        if (m->mh->drm_count) { printf("drm count: %u\n", *m->mh->drm_count); }
+        if (m->mh->drm_size) { printf("drm size: %u\n", *m->mh->drm_size); }
+        if (m->mh->drm_flags) { printf("drm flags: %u\n", *m->mh->drm_flags); }
+        if (m->mh->first_text_index) { printf("first text index: %u\n", *m->mh->first_text_index); }
+        if (m->mh->last_text_index) { printf("last text index: %u\n", *m->mh->last_text_index); }
+        if (m->mh->fdst_index) { printf("FDST offset: %u\n", *m->mh->fdst_index); }
+        if (m->mh->fdst_section_count) { printf("FDST count: %u\n", *m->mh->fdst_section_count); }
+        if (m->mh->fcis_index) { printf("FCIS index: %u\n", *m->mh->fcis_index); }
+        if (m->mh->fcis_count) { printf("FCIS count: %u\n", *m->mh->fcis_count); }
+        if (m->mh->flis_index) { printf("FLIS index: %u\n", *m->mh->flis_index); }
+        if (m->mh->flis_count) { printf("FLIS count: %u\n", *m->mh->flis_count); }
+        if (m->mh->unknown10) { printf("unknown: %u\n", *m->mh->unknown10); }
+        if (m->mh->unknown11) { printf("unknown: %u\n", *m->mh->unknown11); }
+        if (m->mh->srcs_index) { printf("SRCS index: %u\n", *m->mh->srcs_index); }
+        if (m->mh->srcs_count) { printf("SRCS count: %u\n", *m->mh->srcs_count); }
+        if (m->mh->unknown12) { printf("unknown: %u\n", *m->mh->unknown12); }
+        if (m->mh->unknown13) { printf("unknown: %u\n", *m->mh->unknown13); }
+        if (m->mh->extra_flags) { printf("extra record flags: %u\n", *m->mh->extra_flags); }
+        if (m->mh->ncx_index) { printf("NCX offset: %u\n", *m->mh->ncx_index); }
+        if (m->mh->unknown14) { printf("unknown: %u\n", *m->mh->unknown14); }
+        if (m->mh->unknown15) { printf("unknown: %u\n", *m->mh->unknown15); }
+        if (m->mh->fragment_index) { printf("fragment index: %u\n", *m->mh->fragment_index); }
+        if (m->mh->skeleton_index) { printf("skeleton index: %u\n", *m->mh->skeleton_index); }
+        if (m->mh->datp_index) { printf("DATP index: %u\n", *m->mh->datp_index); }
+        if (m->mh->unknown16) { printf("unknown: %u\n", *m->mh->unknown16); }
+        if (m->mh->guide_index) { printf("guide index: %u\n", *m->mh->guide_index); }
+        if (m->mh->unknown17) { printf("unknown: %u\n", *m->mh->unknown17); }
+        if (m->mh->unknown18) { printf("unknown: %u\n", *m->mh->unknown18); }
+        if (m->mh->unknown19) { printf("unknown: %u\n", *m->mh->unknown19); }
+        if (m->mh->unknown20) { printf("unknown: %u\n", *m->mh->unknown20); }
     }
 }
 
@@ -375,7 +223,7 @@ void print_exth(const MOBIData *m) {
  @brief Print meta data of each document record
  @param[in] m MOBIData structure
  */
-void print_records_meta(const MOBIData *m) {
+static void print_records_meta(const MOBIData *m) {
     /* Linked list of MOBIPdbRecord structures holds records data and metadata */
     const MOBIPdbRecord *currec = m->rec;
     while (currec != NULL) {
@@ -389,42 +237,73 @@ void print_records_meta(const MOBIData *m) {
 }
 
 /**
+ @brief Create new path. Name is derived from input file path.
+        [dirname]/[basename][suffix]
+ @param[out] newpath Created path
+ @param[in] buf_len Created path buffer size
+ @param[in] fullpath Input file path
+ @param[in] suffix Path name suffix
+ @return SUCCESS or ERROR
+ */
+static int create_path(char *newpath, const size_t buf_len, const char *fullpath, const char *suffix) {
+    char dirname[FILENAME_MAX];
+    char basename[FILENAME_MAX];
+    split_fullpath(fullpath, dirname, basename, FILENAME_MAX);
+    int n;
+    if (outdir_opt) {
+        n = snprintf(newpath, buf_len, "%s%s%s", outdir, basename, suffix);
+    } else {
+        n = snprintf(newpath, buf_len, "%s%s%s", dirname, basename, suffix);
+    }
+    if (n < 0) {
+        printf("Creating file name failed\n");
+        return ERROR;
+    }
+    if ((size_t) n >= buf_len) {
+        printf("File name too long\n");
+        return ERROR;
+    }
+    return SUCCESS;
+}
+
+/**
+ @brief Create directory. Path is derived from input file path.
+        [dirname]/[basename][suffix]
+ @param[out] newdir Created directory path
+ @param[in] buf_len Created directory buffer size
+ @param[in] fullpath Input file path
+ @param[in] suffix Directory name suffix
+ @return SUCCESS or ERROR
+ */
+static int create_dir(char *newdir, const size_t buf_len, const char *fullpath, const char *suffix) {
+    if (create_path(newdir, buf_len, fullpath, suffix) == ERROR) {
+        return ERROR;
+    }
+    return make_directory(newdir);
+}
+
+/**
  @brief Dump each document record to a file into created folder
  @param[in] m MOBIData structure
  @param[in] fullpath File path will be parsed to build basenames of dumped records
+ @return SUCCESS or ERROR
  */
-int dump_records(const MOBIData *m, const char *fullpath) {
-    char dirname[FILENAME_MAX];
-    char basename[FILENAME_MAX];
-    split_fullpath(fullpath, dirname, basename);
+static int dump_records(const MOBIData *m, const char *fullpath) {
     char newdir[FILENAME_MAX];
-    if (outdir_opt) {
-        sprintf(newdir, "%s%s_records", outdir, basename);
-    } else {
-        sprintf(newdir, "%s%s_records", dirname, basename);
-    }
-    printf("Saving records to %s\n", newdir);
-    errno = 0;
-    if (mt_mkdir(newdir) != 0 && errno != EEXIST) {
-        int errsv = errno;
-        printf("Creating directory failed (%s)\n", strerror(errsv));
+    if (create_dir(newdir, sizeof(newdir), fullpath, "_records") == ERROR) {
         return ERROR;
     }
+    printf("Saving records to %s\n", newdir);
     /* Linked list of MOBIPdbRecord structures holds records data and metadata */
     const MOBIPdbRecord *currec = m->rec;
     int i = 0;
     while (currec != NULL) {
         char name[FILENAME_MAX];
-        sprintf(name, "%s%crecord_%i_uid_%i", newdir, separator, i++, currec->uid);
-        errno = 0;
-        FILE *file = fopen(name, "wb");
-        if (file == NULL) {
-            int errsv = errno;
-            printf("Could not open file for writing: %s (%s)\n", name, strerror(errsv));
+        snprintf(name, sizeof(name), "record_%i_uid_%i", i++, currec->uid);
+        if (write_to_dir(newdir, name, currec->data, currec->size) == ERROR) {
             return ERROR;
         }
-        fwrite(currec->data, 1, currec->size, file);
-        fclose(file);
+
         currec = currec->next;
     }
     return SUCCESS;
@@ -434,59 +313,126 @@ int dump_records(const MOBIData *m, const char *fullpath) {
  @brief Dump all text records, decompressed and concatenated, to a single rawml file
  @param[in] m MOBIData structure
  @param[in] fullpath File path will be parsed to create a new name for saved file
+ @return SUCCESS or ERROR
  */
-int dump_rawml(const MOBIData *m, const char *fullpath) {
-    char dirname[FILENAME_MAX];
-    char basename[FILENAME_MAX];
-    split_fullpath(fullpath, dirname, basename);
-    char newdir[FILENAME_MAX];
-    if (outdir_opt) {
-        sprintf(newdir, "%s%s.rawml", outdir, basename);
-    } else {
-        sprintf(newdir, "%s%s.rawml", dirname, basename);
+static int dump_rawml(const MOBIData *m, const char *fullpath) {
+    char newpath[FILENAME_MAX];
+    if (create_path(newpath, sizeof(newpath), fullpath, ".rawml") == ERROR) {
+        return ERROR;
     }
-    printf("Saving rawml to %s\n", newdir);
+    printf("Saving rawml to %s\n", newpath);
     errno = 0;
-    FILE *file = fopen(newdir, "wb");
+    FILE *file = fopen(newpath, "wb");
     if (file == NULL) {
         int errsv = errno;
-        printf("Could not open file for writing: %s (%s)\n", newdir, strerror(errsv));
+        printf("Could not open file for writing: %s (%s)\n", newpath, strerror(errsv));
         return ERROR;
     }
     const MOBI_RET mobi_ret = mobi_dump_rawml(m, file);
     fclose(file);
     if (mobi_ret != MOBI_SUCCESS) {
-        printf("Dumping rawml file failed (%i)", mobi_ret);
+        printf("Dumping rawml file failed (%s)\n", libmobi_msg(mobi_ret));
         return ERROR;
     }
     return SUCCESS;
 }
 
 /**
+ @brief Dump cover record
+ @param[in] m MOBIData structure
+ @param[in] fullpath File path will be parsed to create a new name for saved file
+ @return SUCCESS or ERROR
+ */
+static int dump_cover(const MOBIData *m, const char *fullpath) {
+    
+    MOBIPdbRecord *record = NULL;
+    MOBIExthHeader *exth = mobi_get_exthrecord_by_tag(m, EXTH_COVEROFFSET);
+    if (exth) {
+        uint32_t offset = mobi_decode_exthvalue(exth->data, exth->size);
+        size_t first_resource = mobi_get_first_resource_record(m);
+        size_t uid = first_resource + offset;
+        record = mobi_get_record_by_seqnumber(m, uid);
+    }
+    if (record == NULL || record->size < 4) {
+        printf("Cover not found\n");
+        return ERROR;
+    }
+
+    const unsigned char jpg_magic[] = "\xff\xd8\xff";
+    const unsigned char gif_magic[] = "\x47\x49\x46\x38";
+    const unsigned char png_magic[] = "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a";
+    const unsigned char bmp_magic[] = "\x42\x4d";
+    
+    char ext[4] = "raw";
+    if (memcmp(record->data, jpg_magic, 3) == 0) {
+        snprintf(ext, sizeof(ext), "%s", "jpg");
+    } else if (memcmp(record->data, gif_magic, 4) == 0) {
+        snprintf(ext, sizeof(ext), "%s", "gif");
+    } else if (record->size >= 8 && memcmp(record->data, png_magic, 8) == 0) {
+        snprintf(ext, sizeof(ext), "%s", "png");
+    } else if (record->size >= 6 && memcmp(record->data, bmp_magic, 2) == 0) {
+        const size_t bmp_size = (uint32_t) record->data[2] | ((uint32_t) record->data[3] << 8) |
+        ((uint32_t) record->data[4] << 16) | ((uint32_t) record->data[5] << 24);
+        if (record->size == bmp_size) {
+            snprintf(ext, sizeof(ext), "%s", "bmp");
+        }
+    }
+    
+    char suffix[12];
+    snprintf(suffix, sizeof(suffix), "_cover.%s", ext);
+
+    char cover_path[FILENAME_MAX];
+    if (create_path(cover_path, sizeof(cover_path), fullpath, suffix) == ERROR) {
+        return ERROR;
+    }
+    
+    printf("Saving cover to %s\n", cover_path);
+    
+    return write_file(record->data, record->size, cover_path);
+}
+
+/**
  @brief Dump parsed markup files and resources into created folder
  @param[in] rawml MOBIRawml structure holding parsed records
  @param[in] fullpath File path will be parsed to build basenames of dumped records
+ @return SUCCESS or ERROR
  */
-int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath) {
+static int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath) {
     if (rawml == NULL) {
         printf("Rawml structure not initialized\n");
         return ERROR;
     }
-    char dirname[FILENAME_MAX];
-    char basename[FILENAME_MAX];
-    split_fullpath(fullpath, dirname, basename);
+
     char newdir[FILENAME_MAX];
-    if (outdir_opt) {
-        sprintf(newdir, "%s%s_markup", outdir, basename);
-    } else {
-        sprintf(newdir, "%s%s_markup", dirname, basename);
+    if (create_dir(newdir, sizeof(newdir), fullpath, "_markup") == ERROR) {
+        return ERROR;
     }
     printf("Saving markup to %s\n", newdir);
-    errno = 0;
-    if (mt_mkdir(newdir) != 0 && errno != EEXIST) {
-        int errsv = errno;
-        printf("Creating directory failed (%s)\n", strerror(errsv));
-        return ERROR;
+
+    if (create_epub_opt) {
+        /* create META_INF directory */
+        char opfdir[FILENAME_MAX];
+        if (create_subdir(opfdir, sizeof(opfdir), newdir, "META-INF") == ERROR) {
+            return ERROR;
+        }
+
+        /* create container.xml */
+        if (write_to_dir(opfdir, "container.xml", (const unsigned char *) EPUB_CONTAINER, sizeof(EPUB_CONTAINER) - 1) == ERROR) {
+            return ERROR;
+        }
+
+        /* create mimetype file */
+        if (write_to_dir(opfdir, "mimetype", (const unsigned char *) EPUB_MIMETYPE, sizeof(EPUB_MIMETYPE) - 1) == ERROR) {
+            return ERROR;
+        }
+
+        /* create OEBPS directory */
+        if (create_subdir(opfdir, sizeof(opfdir), newdir, "OEBPS") == ERROR) {
+            return ERROR;
+        }
+
+        /* output everything else to OEBPS dir */
+        strcpy(newdir, opfdir);
     }
     char partname[FILENAME_MAX];
     if (rawml->markup != NULL) {
@@ -494,24 +440,11 @@ int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath) {
         MOBIPart *curr = rawml->markup;
         while (curr != NULL) {
             MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
-            sprintf(partname, "%s%cpart%05zu.%s", newdir, separator, curr->uid, file_meta.extension);
-            errno = 0;
-            FILE *file = fopen(partname, "wb");
-            if (file == NULL) {
-                int errsv = errno;
-                printf("Could not open file for writing: %s (%s)\n", partname, strerror(errsv));
+            snprintf(partname, sizeof(partname), "part%05zu.%s", curr->uid, file_meta.extension);
+            if (write_to_dir(newdir, partname, curr->data, curr->size) == ERROR) {
                 return ERROR;
             }
-            printf("part%05zu.%s\n", curr->uid, file_meta.extension);
-            errno = 0;
-            fwrite(curr->data, 1, curr->size, file);
-            if (ferror(file)) {
-                int errsv = errno;
-                printf("Error writing: %s (%s)\n", partname, strerror(errsv));
-                fclose(file);
-                return ERROR;
-            }
-            fclose(file);
+            printf("%s\n", partname);
             curr = curr->next;
         }
     }
@@ -522,58 +455,46 @@ int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath) {
         curr = curr->next;
         while (curr != NULL) {
             MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
-            sprintf(partname, "%s%cflow%05zu.%s", newdir, separator, curr->uid, file_meta.extension);
-            errno = 0;
-            FILE *file = fopen(partname, "wb");
-            if (file == NULL) {
-                int errsv = errno;
-                printf("Could not open file for writing: %s (%s)\n", partname, strerror(errsv));
+            snprintf(partname, sizeof(partname), "flow%05zu.%s", curr->uid, file_meta.extension);
+            if (write_to_dir(newdir, partname, curr->data, curr->size) == ERROR) {
                 return ERROR;
             }
-            printf("flow%05zu.%s\n", curr->uid, file_meta.extension);
-            errno = 0;
-            fwrite(curr->data, 1, curr->size, file);
-            if (ferror(file)) {
-                int errsv = errno;
-                printf("Error writing: %s (%s)\n", partname, strerror(errsv));
-                fclose(file);
-                return ERROR;
-            }
-            fclose(file);
+            printf("%s\n", partname);
             curr = curr->next;
         }
     }
     if (rawml->resources != NULL) {
-        /* Linked list of MOBIPart structures in rawml->resources holds binary files */
+        /* Linked list of MOBIPart structures in rawml->resources holds binary files, also opf files */
         MOBIPart *curr = rawml->resources;
-        /* jpg, gif, png, bmp, font, audio, video */
+        /* jpg, gif, png, bmp, font, audio, video also opf, ncx */
         while (curr != NULL) {
             MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
             if (curr->size > 0) {
-				if (file_meta.type == T_NCX)
-					sprintf(partname, "%s%ctoc.%s", newdir, separator, file_meta.extension);
-				else if (file_meta.type == T_OPF) {
-					sprintf(partname, "%s%ccontent.%s", newdir, separator, file_meta.extension);
-				}
-				else
-					sprintf(partname, "%s%cresource%05zu.%s", newdir, separator, curr->uid, file_meta.extension);
-                errno = 0;
-                FILE *file = fopen(partname, "wb");
-                if (file == NULL) {
-                    int errsv = errno;
-                    printf("Could not open file for writing: %s (%s)\n", partname, strerror(errsv));
+                int n;
+                if (create_epub_opt && file_meta.type == T_OPF) {
+                    n = snprintf(partname, sizeof(partname), "%s%ccontent.opf", newdir, separator);
+                } else {
+                    n = snprintf(partname, sizeof(partname), "%s%cresource%05zu.%s", newdir, separator, curr->uid, file_meta.extension);
+                }
+                if (n < 0) {
+                    printf("Creating file name failed\n");
                     return ERROR;
                 }
-                printf("resource%05zu.%s\n", curr->uid, file_meta.extension);
-                errno = 0;
-                fwrite(curr->data, 1, curr->size, file);
-                if (ferror(file)) {
-                    int errsv = errno;
-                    printf("Error writing: %s (%s)\n", partname, strerror(errsv));
-                    fclose(file);
+                if ((size_t) n >= sizeof(partname)) {
+                    printf("File name too long: %s\n", partname);
                     return ERROR;
                 }
-                fclose(file);
+                
+                if (create_epub_opt && file_meta.type == T_OPF) {
+                    printf("content.opf\n");
+                } else {
+                    printf("resource%05zu.%s\n", curr->uid, file_meta.extension);
+                }
+                
+                if (write_file(curr->data, curr->size, partname) == ERROR) {
+                    return ERROR;
+                }
+
             }
             curr = curr->next;
         }
@@ -581,16 +502,276 @@ int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath) {
     return SUCCESS;
 }
 
+#ifdef USE_XMLWRITER
+/**
+ @brief Bundle recreated source files into EPUB container
+ 
+ This function is a simple example.
+ In real world implementation one should validate and correct all input
+ markup to check if it conforms to OPF and HTML specifications and
+ correct all the issues.
+ 
+ @param[in] rawml MOBIRawml structure holding parsed records
+ @param[in] fullpath File path will be parsed to build basenames of dumped records
+ @return SUCCESS or ERROR
+ */
+static int create_epub(const MOBIRawml *rawml, const char *fullpath) {
+    if (rawml == NULL) {
+        printf("Rawml structure not initialized\n");
+        return ERROR;
+    }
+
+    char zipfile[FILENAME_MAX];
+    if (create_path(zipfile, sizeof(zipfile), fullpath, ".epub") == ERROR) {
+        return ERROR;
+    }
+    printf("Saving EPUB to %s\n", zipfile);
+    
+    /* create zip (epub) archive */
+    mz_zip_archive zip;
+    memset(&zip, 0, sizeof(mz_zip_archive));
+    mz_bool mz_ret = mz_zip_writer_init_file(&zip, zipfile, 0);
+    if (!mz_ret) {
+        printf("Could not initialize zip archive\n");
+        return ERROR;
+    }
+    /* start adding files to archive */
+    mz_ret = mz_zip_writer_add_mem(&zip, "mimetype", EPUB_MIMETYPE, sizeof(EPUB_MIMETYPE) - 1, MZ_NO_COMPRESSION);
+    if (!mz_ret) {
+        printf("Could not add mimetype\n");
+        mz_zip_writer_end(&zip);
+        return ERROR;
+    }
+    mz_ret = mz_zip_writer_add_mem(&zip, "META-INF/container.xml", EPUB_CONTAINER, sizeof(EPUB_CONTAINER) - 1, (mz_uint)MZ_DEFAULT_COMPRESSION);
+    if (!mz_ret) {
+        printf("Could not add container.xml\n");
+        mz_zip_writer_end(&zip);
+        return ERROR;
+    }
+    char partname[FILENAME_MAX];
+    if (rawml->markup != NULL) {
+        /* Linked list of MOBIPart structures in rawml->markup holds main text files */
+        MOBIPart *curr = rawml->markup;
+        while (curr != NULL) {
+            MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
+            snprintf(partname, sizeof(partname), "OEBPS/part%05zu.%s", curr->uid, file_meta.extension);
+            mz_ret = mz_zip_writer_add_mem(&zip, partname, curr->data, curr->size, (mz_uint) MZ_DEFAULT_COMPRESSION);
+            if (!mz_ret) {
+                printf("Could not add file to archive: %s\n", partname);
+                mz_zip_writer_end(&zip);
+                return ERROR;
+            }
+            curr = curr->next;
+        }
+    }
+    if (rawml->flow != NULL) {
+        /* Linked list of MOBIPart structures in rawml->flow holds supplementary text files */
+        MOBIPart *curr = rawml->flow;
+        /* skip raw html file */
+        curr = curr->next;
+        while (curr != NULL) {
+            MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
+            snprintf(partname, sizeof(partname), "OEBPS/flow%05zu.%s", curr->uid, file_meta.extension);
+            mz_ret = mz_zip_writer_add_mem(&zip, partname, curr->data, curr->size, (mz_uint) MZ_DEFAULT_COMPRESSION);
+            if (!mz_ret) {
+                printf("Could not add file to archive: %s\n", partname);
+                mz_zip_writer_end(&zip);
+                return ERROR;
+            }
+            curr = curr->next;
+        }
+    }
+    if (rawml->resources != NULL) {
+        /* Linked list of MOBIPart structures in rawml->resources holds binary files, also opf files */
+        MOBIPart *curr = rawml->resources;
+        /* jpg, gif, png, bmp, font, audio, video, also opf, ncx */
+        while (curr != NULL) {
+            MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
+            if (curr->size > 0) {
+                if (file_meta.type == T_OPF) {
+                    snprintf(partname, sizeof(partname), "OEBPS/content.opf");
+                } else {
+                    snprintf(partname, sizeof(partname), "OEBPS/resource%05zu.%s", curr->uid, file_meta.extension);
+                }
+                mz_ret = mz_zip_writer_add_mem(&zip, partname, curr->data, curr->size, (mz_uint) MZ_DEFAULT_COMPRESSION);
+                if (!mz_ret) {
+                    printf("Could not add file to archive: %s\n", partname);
+                    mz_zip_writer_end(&zip);
+                    return ERROR;
+                }
+            }
+            curr = curr->next;
+        }
+    }
+    /* Finalize epub archive */
+    mz_ret = mz_zip_writer_finalize_archive(&zip);
+    if (!mz_ret) {
+        printf("Could not finalize zip archive\n");
+        mz_zip_writer_end(&zip);
+        return ERROR;
+    }
+    mz_ret = mz_zip_writer_end(&zip);
+    if (!mz_ret) {
+        printf("Could not finalize zip writer\n");
+        return ERROR;
+    }
+    return SUCCESS;
+}
+#endif
+
+/**
+ @brief Dump SRCS record
+ @param[in] m MOBIData structure
+ @param[in] fullpath Full file path
+ @return SUCCESS or ERROR
+ */
+static int dump_embedded_source(const MOBIData *m, const char *fullpath) {
+    /* Try to get embedded source */
+    unsigned char *data = NULL;
+    size_t size = 0;
+    MOBI_RET mobi_ret = mobi_get_embedded_source(&data, &size, m);
+    if (mobi_ret != MOBI_SUCCESS) {
+        printf("Extracting source from mobi failed (%s)\n", libmobi_msg(mobi_ret));
+        return ERROR;
+    }
+    if (data == NULL || size == 0 ) {
+        printf("Source archive not found\n");
+        return SUCCESS;
+    }
+
+    char newdir[FILENAME_MAX];
+    if (create_dir(newdir, sizeof(newdir), fullpath, "_source") == ERROR) {
+        return ERROR;
+    }
+
+    const unsigned char epub_magic[] = "mimetypeapplication/epub+zip";
+    const size_t em_offset = 30;
+    const size_t em_size = sizeof(epub_magic) - 1;
+    const char *ext;
+    if (size > em_offset + em_size && memcmp(data + em_offset, epub_magic, em_size) == 0) {
+        ext = "epub";
+    } else {
+        ext = "zip";
+    }
+
+    char srcsname[FILENAME_MAX];
+    char basename[FILENAME_MAX];
+    split_fullpath(fullpath, NULL, basename, FILENAME_MAX);
+    int n = snprintf(srcsname, sizeof(srcsname), "%s_source.%s", basename, ext);
+    if (n < 0) {
+        printf("Creating file name failed\n");
+        return ERROR;
+    }
+    if ((size_t) n >= sizeof(srcsname)) {
+        printf("File name too long\n");
+        return ERROR;
+    }
+    if (write_to_dir(newdir, srcsname, data, size) == ERROR) {
+        return ERROR;
+    }
+    printf("Saving source archive to %s\n", srcsname);
+
+    /* Try to get embedded conversion log */
+    data = NULL;
+    size = 0;
+    mobi_ret = mobi_get_embedded_log(&data, &size, m);
+    if (mobi_ret != MOBI_SUCCESS) {
+        printf("Extracting conversion log from mobi failed (%s)\n", libmobi_msg(mobi_ret));
+        return ERROR;
+    }
+    if (data == NULL || size == 0 ) {
+        printf("Conversion log not found\n");
+        return SUCCESS;
+    }
+    
+    n = snprintf(srcsname, sizeof(srcsname), "%s_source.txt", basename);
+    if (n < 0) {
+        printf("Creating file name failed\n");
+        return ERROR;
+    }
+    if ((size_t) n >= sizeof(srcsname)) {
+        printf("File name too long\n");
+        return ERROR;
+    }
+    if (write_to_dir(newdir, srcsname, data, size) == ERROR) {
+        return ERROR;
+    }
+    printf("Saving conversion log to %s\n", srcsname);
+
+    return SUCCESS;
+}
+
+/**
+ @brief Split hybrid file in two parts
+ @param[in] fullpath Full file path
+ @return SUCCESS or ERROR
+ */
+static int split_hybrid(const char *fullpath) {
+    
+    static int run_count = 0;
+    run_count++;
+    
+    bool use_kf8 = run_count == 1 ? false : true;
+    
+    /* Initialize main MOBIData structure */
+    MOBIData *m = mobi_init();
+    if (m == NULL) {
+        printf("Memory allocation failed\n");
+        return ERROR;
+    }
+
+    errno = 0;
+    FILE *file = fopen(fullpath, "rb");
+    if (file == NULL) {
+        int errsv = errno;
+        printf("Error opening file: %s (%s)\n", fullpath, strerror(errsv));
+        mobi_free(m);
+        return ERROR;
+    }
+    /* MOBIData structure will be filled with loaded document data and metadata */
+    MOBI_RET mobi_ret = mobi_load_file(m, file);
+    fclose(file);
+    
+    if (mobi_ret != MOBI_SUCCESS) {
+        printf("Error while loading document (%s)\n", libmobi_msg(mobi_ret));
+        mobi_free(m);
+        return ERROR;
+    }
+    
+    mobi_ret = mobi_remove_hybrid_part(m, use_kf8);
+    if (mobi_ret != MOBI_SUCCESS) {
+        printf("Error removing hybrid part (%s)\n", libmobi_msg(mobi_ret));
+        mobi_free(m);
+        return ERROR;
+    }
+    
+    if (save_mobi(m, fullpath, "split") != SUCCESS) {
+        printf("Error saving file\n");
+        mobi_free(m);
+        return ERROR;
+    }
+    
+    /* Free MOBIData structure */
+    mobi_free(m);
+    
+    /* Proceed with KF8 part */
+    if (use_kf8 == false) {
+        split_hybrid(fullpath);
+    }
+    
+    return SUCCESS;
+}
 
 /**
  @brief Main routine that calls optional subroutines
  @param[in] fullpath Full file path
+ @return SUCCESS or ERROR
  */
-int loadfilename(const char *fullpath) {
+static int loadfilename(const char *fullpath) {
     MOBI_RET mobi_ret;
     int ret = SUCCESS;
     /* Initialize main MOBIData structure */
-    MOBIData *m = mobi_init(); // Look at m->rh.encrytpion_type, 0 for DRM-free, unencrypted
+    MOBIData *m = mobi_init();
     if (m == NULL) {
         printf("Memory allocation failed\n");
         return ERROR;
@@ -611,34 +792,37 @@ int loadfilename(const char *fullpath) {
     /* MOBIData structure will be filled with loaded document data and metadata */
     mobi_ret = mobi_load_file(m, file);
     fclose(file);
+
     /* Try to print basic metadata, even if further loading failed */
     /* In case of some unsupported formats it may still print some useful info */
-    print_meta(m);
+    if (print_extended_meta_opt) { print_meta(m); }
+    
     if (mobi_ret != MOBI_SUCCESS) {
-        printf("Error while loading document (%i)\n", mobi_ret);
+        printf("Error while loading document (%s)\n", libmobi_msg(mobi_ret));
         mobi_free(m);
         return ERROR;
     }
-    /* Try to print EXTH metadata */
-    print_exth(m);
+    
+    if (create_epub_opt && mobi_is_replica(m)) {
+        create_epub_opt = false;
+        printf("\nWarning: Can't create EPUB format from Print Replica book (ignoring -e argument)\n\n");
+    }
+    
+    if (!print_extended_meta_opt) {
+        print_summary(m);
+    }
+    
+    if (print_extended_meta_opt) {
+        /* Try to print EXTH metadata */
+        print_exth(m);
+    }
+    
 #ifdef USE_ENCRYPTION
-    if (setpid_opt) {
-        /* Try to set key for decompression */
-        if (m->rh && m->rh->encryption_type == 0) {
-            printf("\nDocument is not encrypted, ignoring PID\n");
-        }
-        else if (m->rh && m->rh->encryption_type == 1) {
-            printf("\nEncryption type 1, ignoring PID\n");
-        }
-        else {
-            printf("\nVerifying PID... ");
-            mobi_ret = mobi_drm_setkey(m, pid);
-            if (mobi_ret != MOBI_SUCCESS) {
-                printf("failed (%i)\n", mobi_ret);
-                mobi_free(m);
-                return ERROR;
-            }
-            printf("ok\n");
+    if (setpid_opt || setserial_opt) {
+        ret = set_decryption_key(m, serial, pid);
+        if (ret != SUCCESS) {
+            mobi_free(m);
+            return ret;
         }
     }
 #endif
@@ -653,7 +837,7 @@ int loadfilename(const char *fullpath) {
     if (dump_rawml_opt) {
         printf("\nDumping rawml...\n");
         ret = dump_rawml(m, fullpath);
-    } else if (dump_parts_opt) {
+    } else if (dump_parts_opt || create_epub_opt) {
         printf("\nReconstructing source resources...\n");
         /* Initialize MOBIRawml structure */
         /* This structure will be filled with parsed records data */
@@ -667,20 +851,41 @@ int loadfilename(const char *fullpath) {
         /* Parse rawml text and other data held in MOBIData structure into MOBIRawml structure */
         mobi_ret = mobi_parse_rawml(rawml, m);
         if (mobi_ret != MOBI_SUCCESS) {
-            printf("Parsing rawml failed (%i)\n", mobi_ret);
+            printf("Parsing rawml failed (%s)\n", libmobi_msg(mobi_ret));
             mobi_free(m);
             mobi_free_rawml(rawml);
             return ERROR;
         }
-        printf("\ndumping resources...\n");
-        /* Save parts to files */
-        ret = dump_rawml_parts(rawml, fullpath);
-        if (ret != SUCCESS) {
-            printf("Dumping parts failed\n");
+        if (create_epub_opt && !dump_parts_opt) {
+#ifdef USE_XMLWRITER
+            printf("\nCreating EPUB...\n");
+            /* Create epub file */
+            ret = create_epub(rawml, fullpath);
+            if (ret != SUCCESS) {
+                printf("Creating EPUB failed\n");
+            }
+#endif
+        } else {
+            printf("\nDumping resources...\n");
+            /* Save parts to files */
+            ret = dump_rawml_parts(rawml, fullpath);
+            if (ret != SUCCESS) {
+                printf("Dumping parts failed\n");
+            }
         }
         /* Free MOBIRawml structure */
         mobi_free_rawml(rawml);
-	}
+    }
+    if (extract_source_opt) {
+        ret = dump_embedded_source(m, fullpath);
+    }
+    if (dump_cover_opt) {
+        ret = dump_cover(m, fullpath);
+    }
+    if (split_opt && !mobi_is_hybrid(m)) {
+        printf("File is not a hybrid, skip splitting\n");
+        split_opt = false;
+    }
     /* Free MOBIData structure */
     mobi_free(m);
     return ret;
@@ -690,50 +895,79 @@ int loadfilename(const char *fullpath) {
  @brief Print usage info
  @param[in] progname Executed program name
  */
-void usage(const char *progname) {
-    printf("usage: %s [-edmrs" PRINT_RUSAGE_ARG "v7] [-o dir]" PRINT_ENC_USG " filename\n", progname);
+static void exit_with_usage(const char *progname) {
+    printf("usage: %s [-cd" PRINT_EPUB_ARG "himrst" PRINT_RUSAGE_ARG "vx7] [-o dir]" PRINT_ENC_USG " filename\n", progname);
     printf("       without arguments prints document metadata and exits\n");
-	printf("       -e fn   convert to EPUB under file name fn (other dump/print options ignored)\n");
-	printf("       -d      dump rawml text record\n");
-    printf("       -m      print records metadata\n");
-    printf("       -o dir  save output to dir folder\n");
+    printf("       -c        dump cover\n");
+    printf("       -d        dump rawml text record\n");
+#ifdef USE_XMLWRITER
+    printf("       -e        create EPUB file (with -s will dump EPUB source)\n");
+#endif
+    printf("       -h        show this usage summary and exit\n");
+    printf("       -i        print detailed metadata\n");
+    printf("       -m        print records metadata\n");
+    printf("       -o dir    save output to dir folder\n");
 #ifdef USE_ENCRYPTION
-    printf("       -p pid  set pid for decryption\n");
+    printf("       -p pid    set pid for decryption\n");
+    printf("       -P serial set device serial for decryption\n");
 #endif
-    printf("       -r      dump raw records\n");
-    printf("       -s      dump recreated source files\n");
+    printf("       -r        dump raw records\n");
+    printf("       -s        dump recreated source files\n");
+    printf("       -t        split hybrid file into two parts\n");
 #ifdef HAVE_SYS_RESOURCE_H
-    printf("       -u      show rusage\n");
+    printf("       -u        show rusage\n");
 #endif
-    printf("       -v      show version and exit\n");
-    printf("       -7      parse KF7 part of hybrid file (by default KF8 part is parsed)\n");
-    exit(0);
+    printf("       -v        show version and exit\n");
+    printf("       -x        extract conversion source and log (if present)\n");
+    printf("       -7        parse KF7 part of hybrid file (by default KF8 part is parsed)\n");
+    exit(SUCCESS);
 }
+
 /**
  @brief Main
+ 
+ @param[in] argc Arguments count
+ @param[in] argv Arguments array
+ @return SUCCESS (0) or ERROR (1)
  */
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        usage(argv[0]);
+        exit_with_usage(argv[0]);
     }
-    int opterr = 0;
+    opterr = 0;
     int c;
-    while((c = getopt(argc, argv, "e:dmo:" PRINT_ENC_ARG "rs" PRINT_RUSAGE_ARG "v7")) != -1)
-        switch(c) {
+    while ((c = getopt(argc, argv, "cd" PRINT_EPUB_ARG "himo:" PRINT_ENC_ARG "rst" PRINT_RUSAGE_ARG "vx7")) != -1) {
+        switch (c) {
+            case 'c':
+                dump_cover_opt = true;
+                break;
             case 'd':
-                dump_rawml_opt = 1;
+                dump_rawml_opt = true;
+                break;
+#ifdef USE_XMLWRITER
+            case 'e':
+                create_epub_opt = true;
+                break;
+#endif
+            case 'i':
+                print_extended_meta_opt = true;
                 break;
             case 'm':
-                print_rec_meta_opt = 1;
+                print_rec_meta_opt = true;
                 break;
             case 'o':
-                outdir_opt = 1;
+                outdir_opt = true;
                 size_t outdir_length = strlen(optarg);
+                if (outdir_length == 2 && optarg[0] == '-') {
+                    printf("Option -%c requires an argument.\n", c);
+                    return ERROR;
+                }
                 if (outdir_length >= FILENAME_MAX - 1) {
                     printf("Output directory name too long\n");
                     return ERROR;
                 }
                 strncpy(outdir, optarg, FILENAME_MAX - 1);
+                normalize_path(outdir);
                 if (!dir_exists(outdir)) {
                     printf("Output directory is not valid\n");
                     return ERROR;
@@ -750,68 +984,75 @@ int main(int argc, char *argv[]) {
                 break;
 #ifdef USE_ENCRYPTION
             case 'p':
-                setpid_opt = 1;
+                if (strlen(optarg) == 2 && optarg[0] == '-') {
+                    printf("Option -%c requires an argument.\n", c);
+                    return ERROR;
+                }
+                setpid_opt = true;
                 pid = optarg;
+                break;
+            case 'P':
+                if (strlen(optarg) == 2 && optarg[0] == '-') {
+                    printf("Option -%c requires an argument.\n", c);
+                    return ERROR;
+                }
+                setserial_opt = true;
+                serial = optarg;
                 break;
 #endif
             case 'r':
-                dump_rec_opt = 1;
+                dump_rec_opt = true;
                 break;
             case 's':
-                dump_parts_opt = 1;
+                dump_parts_opt = true;
                 break;
-			case 'e':
-				dump_epub_opt = 1;
-				size_t fn_length = strlen(optarg);
-				if (fn_length >= FILENAME_MAX - 1) {
-					printf("EPUB file name too long\n");
-					return ERROR;
-				}
-				strncpy(epub_fn, optarg, FILENAME_MAX - 1);
-				break;
+            case 't':
+                split_opt = true;
+                break;
 #ifdef HAVE_SYS_RESOURCE_H
             case 'u':
-                print_rusage_opt = 1;
+                print_rusage_opt = true;
                 break;
 #endif
             case 'v':
                 printf("mobitool build: " __DATE__ " " __TIME__ " (" COMPILER ")\n");
                 printf("libmobi: %s\n", mobi_version());
-                return 0;
+                return SUCCESS;
+            case 'x':
+                extract_source_opt = true;
+                break;
             case '7':
-                parse_kf7_opt = 1;
+                parse_kf7_opt = true;
                 break;
             case '?':
-#ifdef USE_ENCRYPTION
-                if (optopt == 'p') {
-                    fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-                }
-                else
-#endif
                 if (isprint(optopt)) {
                     fprintf(stderr, "Unknown option `-%c'\n", optopt);
                 }
                 else {
                     fprintf(stderr, "Unknown option character `\\x%x'\n", optopt);
                 }
-                usage(argv[0]);
+                exit_with_usage(argv[0]);
+            case 'h':
             default:
-                usage(argv[0]);
+                exit_with_usage(argv[0]);
         }
+    }
     if (argc <= optind) {
         printf("Missing filename\n");
-        usage(argv[0]);
+        exit_with_usage(argv[0]);
     }
-    int ret = 0;
+    
+    int ret = SUCCESS;
     char filename[FILENAME_MAX];
     strncpy(filename, argv[optind], FILENAME_MAX - 1);
-	
-	if (dump_epub_opt) {
-		ret = convertMobiToEpub(filename, epub_fn, pid, parse_kf7_opt == 1) ? 1 : 0;
-	}
-	else {
-		ret = loadfilename(filename);
-	}
+    filename[FILENAME_MAX - 1] = '\0';
+    normalize_path(filename);
+    
+    ret = loadfilename(filename);
+    if (split_opt) {
+        printf("\nSplitting hybrid file...\n");
+        ret = split_hybrid(filename);
+    }
 #ifdef HAVE_SYS_RESOURCE_H
     if (print_rusage_opt) {
         /* rusage */

@@ -49,6 +49,7 @@ LOCAL_SRC_FILES += libs/libmobi/src/util.c
 LOCAL_SRC_FILES += libs/libmobi/src/write.c
 LOCAL_SRC_FILES += libs/libmobi/src/sha1.c
 LOCAL_SRC_FILES += libs/libmobi/src/meta.c
+LOCAL_SRC_FILES += libs/libmobi/src/randombytes.c
 
 include $(BUILD_STATIC_LIBRARY)
 
