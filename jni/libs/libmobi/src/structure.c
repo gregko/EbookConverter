@@ -446,7 +446,7 @@ MOBIFragment * mobi_list_add(MOBIFragment *curr, size_t raw_offset, unsigned cha
 MOBIFragment * mobi_list_insert(MOBIFragment *curr, size_t raw_offset, unsigned char *fragment, const size_t size, const bool is_malloc, const size_t offset) {
     MOBIFragment *prev = NULL;
     while (curr) {
-        if (curr->raw_offset != SIZE_MAX && curr->raw_offset <= offset && curr->raw_offset + curr->size >= offset ) {
+        if (curr->raw_offset != SIZE_MAX && curr->raw_offset <= offset && curr->raw_offset + curr->size >= offset) {
             break;
         }
         prev = curr;

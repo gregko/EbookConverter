@@ -154,13 +154,14 @@
     <ClCompile Include="src\memory.c" />
     <ClCompile Include="src\meta.c" />
     <ClCompile Include="src\miniz.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\opf.c" />
     <ClCompile Include="src\parse_rawml.c" />
+    <ClCompile Include="src\randombytes.c" />
     <ClCompile Include="src\read.c" />
     <ClCompile Include="src\save_epub.c" />
     <ClCompile Include="src\sha1.c" />
@@ -181,6 +182,7 @@
     <ClInclude Include="src\mobi.h" />
     <ClInclude Include="src\opf.h" />
     <ClInclude Include="src\parse_rawml.h" />
+    <ClInclude Include="src\randombytes.h" />
     <ClInclude Include="src\read.h" />
     <ClInclude Include="src\save_epub.h" />
     <ClInclude Include="src\sha1.h" />

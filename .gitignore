@@ -46,3 +46,4 @@ AndroidStripError.txt
 /build/
 /.gradle/
 /obj/
+/MobiTest/-e

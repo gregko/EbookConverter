@@ -59,6 +59,9 @@
     <ClCompile Include="src\sha1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\randombytes.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\buffer.h">
@@ -113,6 +116,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\sha1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\randombytes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

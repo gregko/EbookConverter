@@ -20,5 +20,14 @@
     <ClCompile Include="..\jni\libs\libmobi\tools\getopt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\jni\libs\libmobi\tools\common.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jni\libs\libmobi\tools\mobidrm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jni\libs\libmobi\tools\mobimeta.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
