@@ -24,7 +24,8 @@ include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libmobi
-LOCAL_CFLAGS := -std=c99 -DUSE_XMLWRITER -DUSE_LIBXML2 -DUSE_ENCRYPTION
+LOCAL_CFLAGS := -DUSE_XMLWRITER -DUSE_LIBXML2 -DUSE_ENCRYPTION
+LOCAL_CPPFLAGS := -DUSE_XMLWRITER -DUSE_LIBXML2 -DUSE_ENCRYPTION
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/libxml2/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libs/libiconv/include
@@ -45,7 +46,7 @@ LOCAL_SRC_FILES += libs/libmobi/src/opf.c
 LOCAL_SRC_FILES += libs/libmobi/src/parse_rawml.c
 LOCAL_SRC_FILES += libs/libmobi/src/randombytes.c
 LOCAL_SRC_FILES += libs/libmobi/src/read.c
-LOCAL_SRC_FILES += libs/libmobi/src/save_epub.c
+LOCAL_SRC_FILES += libs/libmobi/src/save_epub.cpp
 LOCAL_SRC_FILES += libs/libmobi/src/sha1.c
 LOCAL_SRC_FILES += libs/libmobi/src/structure.c
 LOCAL_SRC_FILES += libs/libmobi/src/util.c

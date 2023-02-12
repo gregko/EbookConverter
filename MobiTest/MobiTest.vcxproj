@@ -91,7 +91,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>USE_ENCRYPTION;USE_LIBXML2;USE_XMLWRITER;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_XMLWRITER;USE_ENCRYPTION;_CRT_SECURE_NO_WARNINGS;MOBI_DEBUG=1;MOBI_DEBUG=1WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\jni\libs\libmobi\src;..\jni\libs\zlib;..\jni\libs\libxml2\include;..\jni\libs\libiconv\include;..\jni\libs\libiconv\libcharset\include;..\jni\libs\tidylib\include;..\jni\libs\tidylib\src;..\jni\libs\unzip101e</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267;4244;4018</DisableSpecificWarnings>
     </ClCompile>

@@ -590,6 +590,8 @@ static int create_epub(const MOBIRawml *rawml, const char *fullpath) {
             if (curr->size > 0) {
                 if (file_meta.type == T_OPF) {
                     snprintf(partname, sizeof(partname), "OEBPS/content.opf");
+                } else if (file_meta.type == T_NCX) { // GKochaniak added 2 lines below
+                    snprintf(partname, sizeof(partname), "OEBPS/toc.ncx");
                 } else {
                     snprintf(partname, sizeof(partname), "OEBPS/resource%05zu.%s", curr->uid, file_meta.extension);
                 }
@@ -768,6 +770,14 @@ static int split_hybrid(const char *fullpath) {
  @return SUCCESS or ERROR
  */
 static int loadfilename(const char *fullpath) {
+
+    if (create_epub_opt && !dump_parts_opt) {
+        char outfn[_MAX_PATH];
+         strcpy(outfn, fullpath);
+        strcat(outfn, ".epub");
+        return convertMobiToEpub(fullpath, outfn, NULL, false);
+    }
+
     MOBI_RET mobi_ret;
     int ret = SUCCESS;
     /* Initialize main MOBIData structure */

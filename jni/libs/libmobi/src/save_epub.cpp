@@ -14,6 +14,9 @@
 // unzip101e headers
 #include <zip.h>
 
+#include <regex>
+#include <string>
+
 // #define WANT_TIDY_CLEANUP // Nov. 18, 2016 - disconnecting TidyLib
 #ifdef WANT_TIDY_CLEANUP
 	typedef unsigned long ulong;
@@ -142,53 +145,68 @@ int epub_rawml_parts(const MOBIRawml *rawml, const char *epub_fn) {
 	}
 
 
-	// Now save all the ebook parts to zf...
-	char partname[FILENAME_MAX];
-	if (rawml->markup != NULL) {
-		/* Linked list of MOBIPart structures in rawml->markup holds main text files */
-		MOBIPart *curr = rawml->markup;
-		while (curr != NULL) {
-			MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
-			sprintf(partname, "OEBPS/part%05zu.%s", curr->uid, file_meta.extension);
-			noError = startFileInZip(zf, partname, true);
-#ifdef WANT_TIDY_CLEANUP
-			TidyBuffer tdBuf;
-			tidyBufInit(&tdBuf);
-			tidyBufAttach(&tdBuf, curr->data, curr->size);
+    // Now save all the ebook parts to zf...
+    char partname[FILENAME_MAX];
+    if (rawml->markup != NULL) {
+        /* Linked list of MOBIPart structures in rawml->markup holds main text files */
+        MOBIPart *curr = rawml->markup;
+        while (curr != NULL) {
+            MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
+            sprintf(partname, "OEBPS/part%05zu.%s", curr->uid, file_meta.extension);
+            noError = startFileInZip(zf, partname, true);
 
-			TidyDoc tdoc = tidyCreate();
-			// What about input encoding? Do we get utf8 from mobi?
-			tidySetOutCharEncoding(tdoc, "utf8");
-			tidyOptSetBool(tdoc, TidyQuiet, yes);
-			tidyOptSetBool(tdoc, TidyMark, no);
-			tidyOptSetInt(tdoc, TidyWrapLen, 0);
-			tidyOptSetBool(tdoc, TidyForceOutput, true);
-			// Shut up the errors and warnings output
-			TidyOutputSink errSink;
-			tidyInitSink(&errSink, (void*)1, emptyPutByteFunc); // (void*)1 because does not initialize for NULL.
-			tidySetErrorSink(tdoc, &errSink);
-			tidyParseBuffer(tdoc, &tdBuf); // 2: errors, 1: warnings, 0: OK, see tidyDocStatus()
-			tidyBufDetach(&tdBuf);
+            // GKochaniak, added - removes erroneous HTML <...<...>...> inside angled brackets
+            size_t size = curr->size;
+            char* pData = (char*)curr->data;
 
-			tidyCleanAndRepair(tdoc); // return same as above
-			tidySaveBuffer(tdoc, &tdBuf);
-			tidyRelease(tdoc);
-			noError &= zipWriteInFileInZip(zf, tdBuf.bp, tdBuf.size) == ZIP_OK;
-			tidyBufFree(&tdBuf);
-#else
-			noError &= zipWriteInFileInZip(zf, curr->data, curr->size) == ZIP_OK;
-#endif
-			noError &= zipCloseFileInZip(zf) == ZIP_OK;
-			if (!noError)
-			{
-				printf("Could not open file inside EPUB for writing: %s\n", partname);
-				zipClose(zf, NULL);
-				return ERROR;
+			if (curr->type == T_HTML) {
+				std::regex pattern("(<.[^>]*?)(<.[^<]*?>\\s*</.*?>)(.*?>)");
+				char lastChar = pData[size - 1];
+				pData[size - 1] = '\0';
+				std::match_results<const char*> m;
+				const char* data = (const char*)curr->data;
+				while (std::regex_search(data, m, pattern) && m.size() == 4) {
+					std::string ss[4];
+					for (int i = 0; i < m.size(); i++) {
+						ss[i] = std::string(m[i].first, m[i].second - m[i].first);
+					}
+					std::string fixed = ss[1] + ss[3] + ss[2];
+					if (fixed.length() == m[0].second - m[0].first) // double check for safety
+						memcpy((void*)m[0].first, (void*)fixed.c_str(), fixed.length());
+					data = m[0].second;
+				}
+				pData[size - 1] = lastChar;
 			}
-			curr = curr->next;
-		}
-	}
-	if (rawml->flow != NULL) {
+
+			// Alternative:
+			//if (curr->type == T_HTML) {
+   //             std::regex pattern("(<.[^>]*?)(<.[^<]*?>\\s*</.*?>)(.*?>)");
+   //             char lastChar = pData[size - 1];
+   //             pData[size - 1] = '\0';
+   //             std::match_results<const char*> m;
+   //             const char* data = (const char*)curr->data;
+   //             while (std::regex_search(data, m, pattern) && m.size() == 4) {
+   //                 memmove((void*) m[2].first, (void*)m[2].second, strlen(m[2].second) + 1);
+   //                 data = m[2].first;
+   //             }
+   //             size = strlen(pData);
+   //             pData[size] = lastChar;
+   //         }
+
+			noError &= zipWriteInFileInZip(zf, pData, size) == ZIP_OK;
+            // GKochaniak, end change
+
+            noError &= zipCloseFileInZip(zf) == ZIP_OK;
+            if (!noError)
+            {
+                printf("Could not open file inside EPUB for writing: %s\n", partname);
+                zipClose(zf, NULL);
+                return ERROR;
+            }
+            curr = curr->next;
+        }
+    }
+    if (rawml->flow != NULL) {
 		/* Linked list of MOBIPart structures in rawml->flow holds supplementary text files, 
 		   e.g. .css, .svg
 		*/
@@ -347,7 +365,9 @@ MOBIRawml* loadMobiRawml(MOBIData *m, const char *mobiFn, const char* pid, bool 
 	return rawml;
 }
 
+
 // TODO: Compare with Bartek's latest souces... Return better error codes.
+extern "C"
 int convertMobiToEpub(const char* mobiFn, const char* epubFn, const char* pid, bool parse_kf7_opt)
 {
 	MOBIData* m = mobi_init();
@@ -370,7 +390,7 @@ int convertMobiToEpub(const char* mobiFn, const char* epubFn, const char* pid, b
 		printf("This is Replica Print ebook (azw4), got PDF resource.\n");
 #if defined(_DEBUG) && defined(WIN32)
 		int len = strlen(epubFn) + 16;
-		char *pdfFn = malloc(len);
+		char *pdfFn = (char*) malloc(len);
 		strncpy(pdfFn, epubFn, len);
 		for (char *pc = pdfFn + strlen(pdfFn); pc > pdfFn; pc--) {
 			if (*pc == '.') {
