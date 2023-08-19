@@ -404,7 +404,7 @@ void OutStmI::VWriteFmt(const char *fmt, va_list ap)
 #error Set initial buffer size to 2 and check if the code with vsnprintf below works in your system!!!
 #endif
     // Guess we need no more than 100 bytes.
-    std::vector<char> buf(100);
+    std::vector<char> buf(1024); // Was 100 - GKochaniak
     int size = buf.size();
     for(;;)
     {

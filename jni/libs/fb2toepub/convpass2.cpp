@@ -1831,6 +1831,9 @@ void ConverterPass2::poem()
         title(false);
     //</title>
 
+    if (s_->IsNextElement("subtitle"))
+        subtitle();
+
     //<epigraph>
     while(s_->IsNextElement("epigraph"))
         epigraph();
