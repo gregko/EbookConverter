@@ -131,6 +131,8 @@ void ConverterPass1::Scan()
 }
 
 void ConverterPass1::GetMetaData(Fb2MetaData& md, bool wantCoverImage) {
+    // Warning! Getting cover image here corrupts memory, so it's set to false.
+    // In @Voice this does not matter, we can get cover image from the converted EPUB file.
     s_->SkipXMLDeclaration();
 
     // Below repeats FictionBook() code up to description
@@ -262,6 +264,11 @@ void ConverterPass1::GetMetaData(Fb2MetaData& md, bool wantCoverImage) {
 
     md.hasCover = !coverImgId.empty();
 
+    // TODO: Warning! Getting cover image here corrupts memory, for now setting to false
+    // In @Voice it's not important, the cover image is in the converted EPUB file, so
+    // we can get it from there.
+    md.hasCover = false;
+    wantCoverImage = false;
     if (!wantCoverImage || coverImgId.empty()) // will be empty if wantCoverImage is false
         return;
 
@@ -735,9 +742,12 @@ void ConverterPass1::coverpage()
 {
     s_->BeginNotEmptyElement("coverpage");
     units_->push_back(Unit(bodyType_, Unit::COVERPAGE, 0, -1));
-    do
-        image(true);
-    while(s_->IsNextElement("image"));
+    // Check if the next element is "image" before entering the loop
+    if (s_->LookAhead().s_ == "image") {
+        do
+            image(true);
+        while (s_->IsNextElement("image"));
+    }
     s_->EndElement();
 }
 

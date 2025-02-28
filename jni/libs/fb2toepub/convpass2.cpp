@@ -1513,13 +1513,14 @@ void ConverterPass2::coverpage()
 {
     s_->BeginNotEmptyElement("coverpage");
     StartUnit(Unit::COVERPAGE);
-    do
-    {
-        pout_->WriteStr("<div class=\"coverpage\">");
-        image(true, false, true);
-        pout_->WriteStr("</div>");
+    if (s_->LookAhead().s_ == "image") {
+        do
+        {
+            pout_->WriteStr("<div class=\"coverpage\">");
+            image(true, false, true);
+            pout_->WriteStr("</div>");
+        } while (s_->IsNextElement("image"));
     }
-    while(s_->IsNextElement("image"));
     s_->EndElement();
 }
 

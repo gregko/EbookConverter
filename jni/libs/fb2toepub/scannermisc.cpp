@@ -72,8 +72,8 @@ void LexScanner::SkipRestOfElementContent()
 			if (t.c_ == '\0')
 				return;
 			// else fall through
-		default:
-            Error("unexpected token");
+        default:
+            Error("LexScanner::SkipRestOfElementContent() - unexpected token");
         }
     }
 }
@@ -85,7 +85,7 @@ void LexScanner::SkipElement()
 
     // start
     if(GetToken().type_ != START)
-        Error("element stag expected");
+        Error("LexScanner::SkipElement(): element stag expected");
 
     SkipAttributes();
 
@@ -251,10 +251,11 @@ String LexScanner::SimpleTextElement(const String &element, AttrMap *attrmap)
 //-----------------------------------------------------------------------
 void LexScanner::EndElement()
 {
-	LexScanner::Token t1 = GetToken();
-	LexScanner::Token t2 = GetToken();
-    if(/*t1.type_ != END ||*/ t2.type_ != CLOSE) // GKochaniak, commented out t1.type_ != END, crashes on v elements
-        Error("etag expected");
+    LexScanner::Token t1 = GetToken();
+    LexScanner::Token t2 = GetToken();
+    if (/*t1.type_ != END ||*/ t2.type_ != CLOSE) { // GKochaniak, commented out t1.type_ != END, crashes on v elements
+        Error("LexScanner::EndElement() - etag expected");
+    }
 }
 
 //-----------------------------------------------------------------------

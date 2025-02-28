@@ -84,32 +84,32 @@ int fb2ToEpub(const char* fnameFb2, const char* cssDir, const char* fnameEpub)
 	}
 	catch (InternalException& ei)
 	{
-		LOGD("InternalException in Convert(): %s, file: %s, line: %d", ei.what(), ei.File(), ei.Line());
+		LOGD("InternalException in Convert(): %s\n file: %s, line: %d", ei.what(), ei.File(), ei.Line());
 		ret = -3;
 	}
 	catch (ParserException& ep)
 	{
-		LOGD("ParserException in Convert(): %s, file: %s, 1st line %d, last line %d", ep.what(), ep.File(), ep.Location().fstLn_, ep.Location().lstLn_);
+		LOGD("ParserException in Convert(): %s\n file: %s, 1st line %d, last line %d", ep.what(), ep.File(), ep.Location().fstLn_, ep.Location().lstLn_);
 		ret = -4;
 	}
 	catch (FontException& ef)
 	{
-		LOGD("FontException in Convert(): %s, file: %s", ef.what(), ef.File());
+		LOGD("FontException in Convert(): %s\n file: %s", ef.what(), ef.File());
 		ret = -5;
 	}
 	catch (IOException& e)
 	{
-		LOGD("IOException in Convert(): %s, file: %s", e.what(), e.File());
+		LOGD("IOException in Convert(): %s\n file: %s", e.what(), e.File());
 		ret = -1;
 	}
 	catch (ExternalException& ee)
 	{
-		LOGD("Exception in Convert(): %s", ee.what());
+		LOGD("Exception in Convert(): %s\n", ee.what());
 		ret = -2;
 	}
 	catch (...)
 	{
-		LOGD("Unknown exception in Convert.");
+		LOGD("Unknown exception in Convert.\n");
 		ret = -9;
 	}
 
