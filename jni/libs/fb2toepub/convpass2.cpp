@@ -1112,6 +1112,11 @@ void ConverterPass2::FictionBook()
     description();
     //</description>
 
+    //<stylesheet> - GKochaniak, try to skip again, some fb2 files have it after description....
+    s_->SkipAll("stylesheet");
+    //</stylesheet>
+
+
 	//<binary>
 	while (s_->IsNextElement("binary"))
 		binary();
