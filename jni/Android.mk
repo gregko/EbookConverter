@@ -9,14 +9,14 @@ LOCAL_C_INCLUDES :=
 LOCAL_LDLIBS := -lz -llog
 LOCAL_CFLAGS := 
 LOCAL_CPPFLAGS := 
-LOCAL_LDFLAGS := -Wl,--gc-sections 
+LOCAL_LDFLAGS := -Wl,--gc-sections,-z,max-page-size=16384
 LOCAL_STATIC_LIBRARIES := libmobi fb2toepub
 
 # Note: I use LOCAL_WHOLE_STATIC_LIBRARIES for the libs below, as I need to call
 # some functions from them in my larger project. If this is not necessary, lump
 # them all together in LOCAL_STATIC_LIBRARIES
 LOCAL_WHOLE_STATIC_LIBRARIES := unzip101e libiconv libxml2
-LOCAL_SHARED_LIBRARIES := 
+LOCAL_SHARED_LIBRARIES :=
 include $(BUILD_SHARED_LIBRARY)
 
 ################################################################################
